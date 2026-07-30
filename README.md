@@ -167,9 +167,17 @@ npm test
 npm run test:live
 ```
 
-The live test synthesizes a short PCM tone/silence stream to verify session
-setup and API event handling; meaningful recognition still needs a spoken-audio
-fixture or a real Discord call.
+On macOS, the live test synthesizes a spoken phrase, converts it to 24 kHz
+PCM, sends it through the local relay, and requires a finalized caption from
+the real OpenAI session.
+
+To create a zip for distribution or archival:
+
+```bash
+npm run package:extension
+```
+
+Chrome's **Load unpacked** flow still uses the `extension/` directory directly.
 
 ## Roadmap
 

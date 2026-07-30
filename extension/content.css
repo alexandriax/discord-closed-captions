@@ -1,0 +1,159 @@
+#disccord-overlay {
+  --disccord-blurple: #5865f2;
+  --disccord-green: #23a55a;
+  --disccord-red: #ed4245;
+  --disccord-yellow: #f0b232;
+  position: fixed;
+  z-index: 2147483647;
+  right: 50%;
+  bottom: max(88px, env(safe-area-inset-bottom));
+  width: min(720px, calc(100vw - 32px));
+  transform: translateX(50%);
+  color: #fff;
+  font-family:
+    "gg sans",
+    "Noto Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 28px rgb(0 0 0 / 45%));
+}
+
+#disccord-overlay[hidden] {
+  display: none;
+}
+
+#disccord-overlay .disccord-header {
+  display: flex;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 8px;
+  padding: 6px 8px 6px 11px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 999px;
+  background: rgb(17 18 20 / 86%);
+  color: rgb(255 255 255 / 78%);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  line-height: 20px;
+  backdrop-filter: blur(16px);
+  pointer-events: auto;
+}
+
+#disccord-overlay .disccord-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--disccord-blurple);
+  box-shadow: 0 0 0 3px rgb(88 101 242 / 20%);
+}
+
+#disccord-overlay[data-state="ready"] .disccord-dot {
+  background: var(--disccord-green);
+  box-shadow: 0 0 0 3px rgb(35 165 90 / 20%);
+}
+
+#disccord-overlay[data-state="connecting"] .disccord-dot,
+#disccord-overlay[data-state="capturing"] .disccord-dot {
+  background: var(--disccord-yellow);
+  box-shadow: 0 0 0 3px rgb(240 178 50 / 20%);
+}
+
+#disccord-overlay[data-state="error"] .disccord-dot {
+  background: var(--disccord-red);
+  box-shadow: 0 0 0 3px rgb(237 66 69 / 20%);
+}
+
+#disccord-overlay .disccord-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#disccord-overlay .disccord-close {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 72%);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#disccord-overlay .disccord-close:hover {
+  background: rgb(255 255 255 / 16%);
+  color: #fff;
+}
+
+#disccord-overlay .disccord-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+#disccord-overlay .disccord-captions {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#disccord-overlay .disccord-caption {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 14px 9px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 10px;
+  background: rgb(12 13 15 / 88%);
+  color: #fff;
+  font-size: clamp(18px, 2.2vw, 28px);
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  line-height: 1.28;
+  text-align: center;
+  text-wrap: balance;
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+#disccord-overlay .disccord-caption[data-final="true"] {
+  color: rgb(255 255 255 / 88%);
+}
+
+@media (max-width: 600px) {
+  #disccord-overlay {
+    bottom: max(72px, env(safe-area-inset-bottom));
+  }
+
+  #disccord-overlay .disccord-caption {
+    padding: 7px 11px 8px;
+    border-radius: 8px;
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #disccord-overlay .disccord-caption {
+    animation: disccord-caption-in 140ms ease-out;
+  }
+
+  @keyframes disccord-caption-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+}
+

@@ -11,6 +11,7 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "check": "node scripts/check.js",
+    "package:extension": "npm run check && node scripts/package-extension.js",
     "test": "node --test --test-reporter=spec test/unit/*.test.js",
     "test:live": "node --test --test-reporter=spec test/live/*.test.js"
   },

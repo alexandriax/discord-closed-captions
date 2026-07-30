@@ -134,6 +134,9 @@ export class CaptionSession {
       if (message?.type === "stop") {
         this.#client.close(1000, "Client stopped captions");
       }
+      if (message?.type === "commit") {
+        this.#commitAudio();
+      }
     } catch {
       this.#send({
         type: "error",
