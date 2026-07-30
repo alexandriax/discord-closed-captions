@@ -71,7 +71,7 @@ Useful primary references:
 - One-click start/stop while the active tab is `https://discord.com/...`
 - Continued playback while the tab is being captured
 - Live partial captions and finalized utterances
-- Automatic speech-turn detection
+- Live partial captions with periodic finalized caption segments
 - A readable in-call overlay with connection/error state
 - Local-only relay by default (`127.0.0.1`)
 - Optional shared access key for a later remote relay
@@ -175,7 +175,8 @@ fixture or a real Discord call.
 
 1. Validate caption latency and hair-dryer/noise behavior in a real two-person
    Discord Web call.
-2. Tune VAD, language, keyword hints, caption lifetime, and reconnection.
+2. Tune turn boundaries, language, keyword hints, caption lifetime, and
+   reconnection.
 3. Package a signed Chrome extension.
 4. Evaluate a hosted relay. Persistent bidirectional WebSockets and secret
    storage are hard requirements; the deployment target must support both.
@@ -199,4 +200,3 @@ fixture or a real Discord call.
 ## Name
 
 **Disccord** is spelled with two Cs: **Dis**cord **c**losed captions.
-

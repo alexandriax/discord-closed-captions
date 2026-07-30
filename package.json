@@ -1,0 +1,21 @@
+{
+  "name": "disccord",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live closed captions for Discord Web calls",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "check": "node scripts/check.js",
+    "test": "node --test --test-reporter=spec test/unit/*.test.js",
+    "test:live": "node --test --test-reporter=spec test/live/*.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ws": "^8.21.1"
+  }
+}
