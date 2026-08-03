@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Disccord settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">DISCORD + CLOSED CAPTIONS</p>
+        <h1>Disccord</h1>
+        <p class="lede">
+          Choose where the extension sends captured Discord tab audio and give
+          GPT Live Transcribe a little context.
+        </p>
+      </header>
+
+      <form id="settings-form">
+        <label>
+          <span>Relay WebSocket URL</span>
+          <input
+            id="relay-url"
+            name="relayUrl"
+            type="url"
+            spellcheck="false"
+            required
+          />
+          <small>Use <code>ws://127.0.0.1:8787/captions</code> locally. Remote relays require <code>wss://</code>.</small>
+        </label>
+
+        <label>
+          <span>Access key <em>optional</em></span>
+          <input
+            id="access-key"
+            name="accessKey"
+            type="password"
+            autocomplete="off"
+          />
+          <small>Only needed when the relay has <code>DISCCORD_ACCESS_KEY</code> configured.</small>
+        </label>
+
+        <div class="columns">
+          <label>
+            <span>Expected languages</span>
+            <input
+              id="languages"
+              name="languages"
+              type="text"
+              placeholder="en, es"
+            />
+            <small>Comma-separated language codes.</small>
+          </label>
+
+          <label>
+            <span>Vocabulary hints</span>
+            <input
+              id="keywords"
+              name="keywords"
+              type="text"
+              placeholder="names, places, acronyms"
+            />
+            <small>Words the model should expect to hear.</small>
+          </label>
+        </div>
+
+        <label>
+          <span>Call context</span>
+          <textarea id="prompt" name="prompt" rows="4"></textarea>
+          <small>Describe the setting; do not paste private call content here.</small>
+        </label>
+
+        <div class="actions">
+          <button type="submit">Save settings</button>
+          <output id="save-status" aria-live="polite"></output>
+        </div>
+      </form>
+
+      <aside>
+        <strong>Privacy note</strong>
+        Captured audio is sent to your configured relay and OpenAI while
+        captions are on. Tell everyone in the call and get consent first.
+      </aside>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
+
