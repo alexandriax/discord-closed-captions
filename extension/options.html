@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Discord Closed Captions Extension settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand-row">
+          <img src="icons/icon-48.png" alt="" width="48" height="48" />
+          <p class="eyebrow">DISCORD + OPENAI</p>
+        </div>
+        <h1>Discord Closed Captions Extension</h1>
+        <p class="lede">
+          Add live closed captions to Discord Web calls with your own OpenAI
+          API key and GPT-Live-Transcribe—no local relay required.
+        </p>
+      </header>
+
+      <section class="card key-card" aria-labelledby="api-key-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step">STEP 1</p>
+            <h2 id="api-key-heading">Connect OpenAI</h2>
+          </div>
+          <div id="key-state" class="state-pill" data-state="missing">
+            Not configured
+          </div>
+        </div>
+
+        <p id="key-summary" class="section-copy">
+          Add an OpenAI API key before starting captions.
+        </p>
+
+        <form id="key-form">
+          <label>
+            <span>OpenAI API key</span>
+            <input
+              id="api-key"
+              name="apiKey"
+              type="password"
+              autocomplete="off"
+              placeholder="sk-…"
+              spellcheck="false"
+              required
+            />
+            <small>
+              The key is used only by trusted extension pages to create a
+              short-lived Realtime session token. It is never sent to Discord.
+            </small>
+          </label>
+
+          <fieldset>
+            <legend>Storage</legend>
+            <label class="storage-choice">
+              <input
+                type="radio"
+                name="storageMode"
+                value="session"
+                checked
+              />
+              <span>
+                <strong>Until Chrome closes</strong>
+                <small>
+                  Recommended. Kept in memory-backed extension session storage;
+                  enter it again after Chrome restarts.
+                </small>
+              </span>
+            </label>
+            <label class="storage-choice">
+              <input type="radio" name="storageMode" value="vault" />
+              <span>
+                <strong>Encrypted vault</strong>
+                <small>
+                  Persist encrypted ciphertext locally and unlock it with a
+                  separate passphrase after Chrome restarts.
+                </small>
+              </span>
+            </label>
+          </fieldset>
+
+          <div id="vault-fields" class="vault-fields" hidden>
+            <div class="columns">
+              <label>
+                <span>Vault passphrase</span>
+                <input
+                  id="vault-passphrase"
+                  name="vaultPassphrase"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="12"
+                />
+              </label>
+              <label>
+                <span>Confirm passphrase</span>
+                <input
+                  id="vault-passphrase-confirm"
+                  name="vaultPassphraseConfirm"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="12"
+                />
+              </label>
+            </div>
+            <small>
+              There is no passphrase recovery. A strong, unique passphrase
+              protects the stored key while the vault is locked.
+            </small>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Save API key</button>
+            <output id="key-status" aria-live="polite"></output>
+          </div>
+        </form>
+
+        <form id="unlock-form" class="unlock-panel" hidden>
+          <label>
+            <span>Unlock encrypted vault</span>
+            <input
+              id="unlock-passphrase"
+              name="unlockPassphrase"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <button type="submit" class="secondary">Unlock for this session</button>
+        </form>
+
+        <div id="key-controls" class="key-controls" hidden>
+          <button id="lock-key" type="button" class="secondary" hidden>
+            Lock now
+          </button>
+          <button id="clear-key" type="button" class="danger">
+            Clear saved key
+          </button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="caption-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step">STEP 2</p>
+            <h2 id="caption-heading">Tune captions</h2>
+          </div>
+        </div>
+
+        <form id="settings-form">
+          <div class="columns">
+            <label>
+              <span>Expected languages</span>
+              <input
+                id="languages"
+                name="languages"
+                type="text"
+                placeholder="en, es"
+              />
+              <small>Comma-separated language codes.</small>
+            </label>
+
+            <label>
+              <span>Vocabulary hints</span>
+              <input
+                id="keywords"
+                name="keywords"
+                type="text"
+                placeholder="names, places, acronyms"
+              />
+              <small>Words the model should expect to hear.</small>
+            </label>
+          </div>
+
+          <label>
+            <span>Call context</span>
+            <textarea id="prompt" name="prompt" rows="4"></textarea>
+            <small>
+              Describe the setting; do not paste private call content here.
+            </small>
+          </label>
+
+          <div class="actions">
+            <button type="submit">Save caption settings</button>
+            <output id="settings-status" aria-live="polite"></output>
+          </div>
+        </form>
+      </section>
+
+      <aside>
+        <strong>Privacy and consent</strong>
+        While captions are on, the extension sends the Discord tab's rendered
+        audio directly to OpenAI for transcription. It does not save audio or
+        transcripts. Tell everyone in the call and get their consent first.
+      </aside>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
