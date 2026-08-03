@@ -1,210 +1,236 @@
-# Disccord
+# Discord Closed Captions Extension
 
-Live closed captions for Discord calls.
+Chrome extension for adding closed captions to Discord calls via OpenAI's GPT-Live-Transcribe.
 
-Disccord is a proof of concept for the very specific moment when a friend is
-talking on a Discord video call and a hair dryer makes them impossible to hear.
-The first version runs on **Discord Web in Chrome**: a small extension captures
-the audio already playing in the Discord tab, sends it to a local relay, and
-draws streaming captions over the call.
+![Discord Closed Captions Extension settings](docs/screenshot.jpg)
 
-> Status: local POC. The repository is intentionally not a Discord client mod
-> and does not contain a Discord user token, bot token, or OpenAI API key.
+The extension captures the audio already playing in a Discord Web tab, sends
+it directly to OpenAI for live transcription, and draws streaming captions over
+the call. It is fully self-contained: there is no local relay, hosted backend,
+Discord bot, or Discord account token.
 
-## What we are building
+> [!IMPORTANT]
+> Bring your own OpenAI API key. API usage is billed to that OpenAI account and
+> is separate from a ChatGPT subscription. Tell everyone in the call that live
+> transcription is enabled and get their consent before starting.
+
+## Features
+
+- One-click start and stop from the Chrome toolbar
+- Live partial captions and finalized caption segments
+- A readable caption overlay inside Discord, including fullscreen calls
+- Continued Discord audio playback while tab capture is active
+- Direct Realtime API connection using `gpt-live-transcribe`
+- No stored audio, transcripts, Discord credentials, or call history
+- Session-only API key storage by default
+- Optional passphrase-encrypted local API key vault
+- Language, vocabulary, and call-context hints
+
+## How it works
 
 ```mermaid
 flowchart LR
-    A["Friend speaks in Discord"] --> B["Discord Web tab audio"]
-    B --> C["Chrome extension<br/>tab capture + 24 kHz PCM"]
-    C --> D["Local Disccord relay<br/>WebSocket on 127.0.0.1"]
-    D --> E["OpenAI Realtime API<br/>gpt-live-transcribe"]
-    E --> D
-    D --> F["Caption overlay<br/>inside the Discord call"]
+    A["Discord Web tab audio"] --> B["Chrome tab capture"]
+    B --> C["24 kHz mono PCM"]
+    K["User-owned OpenAI API key"] --> T["Short-lived Realtime token"]
+    T --> D["OpenAI Realtime API<br/>gpt-live-transcribe"]
+    C --> D
+    D --> E["Streaming transcript events"]
+    E --> F["Caption overlay in Discord"]
 ```
 
-The POC has two pieces:
+The standard API key is used from a trusted extension context to call OpenAI's
+Realtime client-secret endpoint. The resulting short-lived credential
+authenticates the browser WebSocket. The standard key is never sent to Discord,
+the Discord content script, a project server, or a URL.
 
-1. `server/` — a small Node.js WebSocket relay. It keeps the OpenAI API key on
-   the server, opens one Realtime transcription session per caption stream, and
-   forwards only caption events back to the browser.
-2. `extension/` — an unpacked Manifest V3 Chrome extension. Clicking its toolbar
-   icon captures the active Discord tab's audio, preserves normal playback,
-   streams mono PCM to the relay, and injects the caption overlay.
+Only the tab's rendered output is captured. In a typical call, that includes
+the remote participant and Discord notification sounds. The local microphone
+is normally not played into the tab, so it is not normally transcribed by this
+extension.
 
-Only the tab's rendered output is captured. In a normal Discord call that means
-the remote participant plus Discord notification sounds; the local microphone
-is not played back into the tab and should therefore not be transcribed.
+## Requirements
 
-## Why this route
-
-There is no supported “Discord extension” API that can add UI to a normal DM
-video call. A Discord bot is also a poor fit for this first use case:
-
-- Discord bots are designed to join server voice channels, not a private
-  one-to-one DM call.
-- Discord voice is a UDP/Opus protocol, and Discord now requires its DAVE
-  end-to-end encryption protocol for voice and video conversations.
-- Injecting code into or patching the native Discord client would create a
-  brittle client mod and unnecessary account-policy risk.
-
-Chrome already exposes a user-consented tab capture API. Since Chrome 116, a
-toolbar click can create a tab stream that an extension's offscreen document
-uses in the background. That gives us the audio the user can already hear,
-without Discord credentials or protocol interception.
-
-Useful primary references:
-
-- [OpenAI Realtime transcription](https://developers.openai.com/api/docs/guides/realtime-transcription)
-  recommends `gpt-live-transcribe` for streaming transcript deltas.
-- [OpenAI Realtime WebSocket guide](https://developers.openai.com/api/docs/guides/realtime-websocket)
-  documents server-side API-key authentication.
-- [Chrome tab capture guide](https://developer.chrome.com/docs/extensions/how-to/web-platform/screen-capture)
-  documents service-worker capture and offscreen audio processing.
-- [Discord voice documentation](https://docs.discord.com/developers/topics/voice-connections)
-  describes its voice transport and DAVE requirements.
-
-## POC scope
-
-### Included
-
-- One-click start/stop while the active tab is `https://discord.com/...`
-- Continued playback while the tab is being captured
-- Live partial captions and finalized utterances
-- Live partial captions with periodic finalized caption segments
-- A readable in-call overlay with connection/error state
-- Local-only relay by default (`127.0.0.1`)
-- Optional shared access key for a later remote relay
-- No transcript persistence
-
-### Not included yet
-
-- Native Discord desktop support
-- Speaker identification in group calls
-- Captions sent to the other participant
-- A hosted multi-user service, accounts, billing, or rate limiting
-- Transcript history or recording
-- Chrome Web Store packaging
-- A Discord bot
-
-For “vice versa,” each participant can install and run Disccord locally. A
-future consensual room mode could exchange captions between participants, but
-it is not necessary to caption the remote audio already arriving in each tab.
-
-## Quick start
-
-Prerequisites:
-
-- Node.js 20 or newer
 - Chrome 116 or newer
-- An OpenAI API key with access to `gpt-live-transcribe`
-- Discord opened at [discord.com/app](https://discord.com/app)
+- Discord Web at [discord.com/app](https://discord.com/app)
+- An [OpenAI API key](https://platform.openai.com/api-keys) with API billing and
+  access to `gpt-live-transcribe`
 
-Install and run the relay:
+The native Discord desktop application is not supported because Chrome cannot
+capture another application's audio with the tab-capture API.
 
-```bash
-npm install
-npm run dev
-```
+## Install from source
 
-The relay reads the repository's `.env`. At minimum:
+1. Clone or download this repository.
+2. Open `chrome://extensions` in Chrome.
+3. Enable **Developer mode**.
+4. Choose **Load unpacked** and select the repository's `extension/` directory.
+5. Pin **Discord Closed Captions Extension** to the toolbar.
 
-```dotenv
-OPENAI_API_KEY=your_api_key
-```
+The options page opens after the first installation.
 
-Load the extension:
+## Configure the OpenAI API key
 
-1. Open `chrome://extensions`.
-2. Enable **Developer mode**.
-3. Choose **Load unpacked** and select this repository's `extension/` folder.
-4. Pin Disccord to the toolbar.
-5. Join a Discord Web call, then click the Disccord toolbar icon.
-6. Click it again to stop.
+Enter an API key in the extension options and choose one of the storage modes:
 
-Chrome shows a capture indicator while Disccord is listening to the tab.
+### Until Chrome closes — recommended
 
-## Configuration
+The plaintext key is kept in `chrome.storage.session`, which is memory-backed,
+restricted to trusted extension contexts, and cleared when Chrome restarts or
+the extension reloads. Nothing secret is persisted to disk by the extension.
 
-Copy `.env.example` when setting up a new checkout. Supported relay variables:
+### Encrypted vault
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `OPENAI_API_KEY` | required | Server-side OpenAI credential |
-| `PORT` | `8787` | Local HTTP/WebSocket port |
-| `HOST` | `127.0.0.1` | Bind address; local-only by default |
-| `DISCCORD_ACCESS_KEY` | empty | Optional client key for a remote relay |
-| `OPENAI_TRANSCRIPTION_MODEL` | `gpt-live-transcribe` | Explicit model override |
+The extension encrypts the API key with AES-256-GCM using a key derived from a
+separate passphrase with PBKDF2-SHA-256. Only the ciphertext, salt, IV, and
+format metadata are persisted in `chrome.storage.local`. The plaintext key is
+placed in trusted session storage only after the vault is unlocked.
 
-The extension defaults to `ws://127.0.0.1:8787/captions`. Its options page can
-change the relay URL, optional access key, expected language, and vocabulary
-hints without rebuilding the extension.
+Use a strong, unique passphrase. It cannot be recovered if forgotten.
+
+Neither mode uses `chrome.storage.sync`, and the options page never restores a
+saved API key into an HTML input.
+
+### Security boundary
+
+These controls protect against Discord page scripts, accidental browser sync,
+casual storage inspection, and—when the encrypted vault is locked—offline
+profile copying. They do not make a browser extension equivalent to server-side
+key custody. Malicious extension code, a compromised extension update, a
+debugger, or malware running with the user's privileges could use an unlocked
+key.
+
+For additional containment, use a dedicated OpenAI project and API key, set a
+low project budget and notification thresholds, review usage regularly, and
+rotate the key if anything looks unexpected.
+
+## Use captions
+
+1. Join a call in Discord Web.
+2. Confirm everyone has consented to live transcription.
+3. Click the extension's toolbar icon in the active Discord tab.
+4. Watch the status indicator turn green when live captions are ready.
+5. Click the toolbar icon again—or the close button above the captions—to stop.
+
+Chrome displays its normal capture indicator while the extension is listening
+to the selected tab. Captions and audio are not retained after they are shown.
+
+## Caption settings
+
+The extension options include:
+
+| Setting | Purpose |
+| --- | --- |
+| Expected languages | Comma-separated language codes such as `en, es` |
+| Vocabulary hints | Names, places, acronyms, and other expected terms |
+| Call context | Short, non-sensitive context that can improve transcription |
+
+## Permissions
+
+| Permission | Why it is needed |
+| --- | --- |
+| `activeTab` | Limits toolbar actions to the user-selected active tab |
+| `tabCapture` | Captures audio from the active Discord Web tab after a toolbar click |
+| `offscreen` | Keeps audio processing active outside the Discord page |
+| `storage` | Stores preferences, session key state, and optional encrypted vault data |
+| `https://discord.com/*` | Injects and updates the caption overlay |
+| `https://api.openai.com/*` | Creates a short-lived session credential and connects to transcription |
+
+The content security policy permits network connections only to OpenAI. The
+extension contains no remote JavaScript and accepts messages only from its own
+extension ID.
 
 ## Privacy and consent
 
-Disccord sends captured call audio to the configured relay and then to OpenAI
-for live transcription. The POC does not save audio or transcripts, but network
-services necessarily process the audio while the session is active.
+While captions are active, captured tab audio is sent directly to OpenAI for
+processing. Review [OpenAI's API data usage policies](https://openai.com/policies/api-data-usage-policies/)
+for current service details.
 
-Tell everyone in the call that live transcription is enabled and get their
-consent before starting. Recording and interception rules vary by location;
-this project is not legal advice. Do not use it for calls where you are not a
-participant.
+The extension itself does not record calls or persist audio or transcripts.
+Recording and interception laws vary by location; this project is not legal
+advice. Do not use it on calls where you are not a participant or where the
+other participants have not consented.
 
-Never put `OPENAI_API_KEY` in the extension. A public relay must add real user
-authentication, per-user quotas, abuse controls, TLS (`wss://`), secret
-rotation, and an explicit privacy policy. The optional shared access key is only
-an early testing gate, not production authentication.
+## Troubleshooting
 
-## Testing strategy
+### Clicking the icon opens settings
 
-The repository uses Node's built-in test runner for deterministic protocol and
-audio utilities. The live smoke test is opt-in because it uses the configured
-OpenAI account:
+The API key is missing or the encrypted vault is locked. Save a session key or
+unlock the vault, return to the Discord tab, and click the icon again.
+
+### OpenAI rejects the session
+
+Verify that the key is active, belongs to an API project with billing enabled,
+and can access `gpt-live-transcribe`. ChatGPT subscriptions do not include API
+credits.
+
+### No captions appear
+
+- Confirm the active tab is on `https://discord.com/`.
+- Confirm the call audio is actually playing from that tab.
+- Reload the unpacked extension after pulling code changes, then re-enter or
+  unlock the API key.
+- Check the extension service worker and offscreen-document consoles from
+  `chrome://extensions` for sanitized error messages.
+
+### The other participant cannot see captions
+
+The overlay is local to the person running the extension. Each participant who
+wants captions should install and run it themselves.
+
+## Development
+
+The runtime extension has no npm dependencies. Node.js 20 or newer is used for
+checks, tests, local UI preview, and packaging.
 
 ```bash
+npm install
+npm run check
 npm test
-npm run test:live
 ```
 
-On macOS, the live test synthesizes a spoken phrase, converts it to 24 kHz
-PCM, sends it through the local relay, and requires a finalized caption from
-the real OpenAI session.
+Preview the options page without installing the extension:
 
-To create a zip for distribution or archival:
+```bash
+npm run preview
+```
+
+Create a distributable zip in the ignored `dist/` directory:
 
 ```bash
 npm run package:extension
 ```
 
-Chrome's **Load unpacked** flow still uses the `extension/` directory directly.
-
-## Roadmap
-
-1. Validate caption latency and hair-dryer/noise behavior in a real two-person
-   Discord Web call.
-2. Tune turn boundaries, language, keyword hints, caption lifetime, and
-   reconnection.
-3. Package a signed Chrome extension.
-4. Evaluate a hosted relay. Persistent bidirectional WebSockets and secret
-   storage are hard requirements; the deployment target must support both.
-5. Add a macOS capture helper for the native Discord app if Discord Web is not
-   acceptable. This would use user-approved system audio capture rather than
-   patching Discord.
-6. Consider speaker labeling and consensual multi-participant caption rooms.
+The checks validate all JavaScript syntax and keep the package and extension
+versions aligned. Unit tests cover PCM conversion, settings normalization,
+encrypted-vault round trips, Realtime session configuration, token exchange,
+and transcript event mapping.
 
 ## Repository layout
 
 ```text
 .
-├── extension/       # Chrome MV3 capture, options, and caption overlay
-├── server/          # Local relay and OpenAI Realtime adapter
-├── test/            # Unit, integration, and opt-in live tests
-├── .env.example
+├── docs/                 # README assets
+├── extension/            # Manifest V3 extension source
+│   ├── key-vault.js      # Session and passphrase-encrypted BYOK storage
+│   ├── openai-realtime.js # Direct OpenAI Realtime client
+│   ├── offscreen.js      # Tab audio capture and streaming lifecycle
+│   └── content.js        # Discord caption overlay
+├── scripts/              # Checks, preview server, and packaging
+├── test/unit/            # Deterministic unit tests
+├── LICENSE
 ├── package.json
 └── README.md
 ```
 
-## Name
+## References
 
-**Disccord** is spelled with two Cs: **Dis**cord **c**losed captions.
+- [OpenAI Realtime transcription](https://developers.openai.com/api/docs/guides/realtime-transcription)
+- [OpenAI Realtime WebSocket](https://developers.openai.com/api/docs/guides/realtime-websocket)
+- [OpenAI API key safety](https://help.openai.com/en/articles/5112595-best-practices-for-api-key)
+- [Chrome tab capture](https://developer.chrome.com/docs/extensions/how-to/web-platform/screen-capture)
+- [Chrome extension storage](https://developer.chrome.com/docs/extensions/reference/api/storage)
+
+## License
+
+[MIT](LICENSE)

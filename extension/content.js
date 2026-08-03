@@ -27,7 +27,10 @@
 
     if (message.type === "disccord:error") {
       showOverlay();
-      setStatus("error", message.message || "Disccord hit an error.");
+      setStatus(
+        "error",
+        message.message || "Discord Closed Captions hit an error.",
+      );
     }
 
     if (message.type === "disccord:stopped") {
@@ -61,12 +64,12 @@
     overlay.id = "disccord-overlay";
     overlay.hidden = true;
     overlay.setAttribute("role", "region");
-    overlay.setAttribute("aria-label", "Disccord live captions");
+    overlay.setAttribute("aria-label", "Discord live closed captions");
     overlay.innerHTML = `
       <div class="disccord-header">
         <span class="disccord-dot" aria-hidden="true"></span>
         <span class="disccord-status">Starting captions…</span>
-        <button class="disccord-close" type="button" aria-label="Stop Disccord captions">×</button>
+        <button class="disccord-close" type="button" aria-label="Stop Discord closed captions">×</button>
       </div>
       <div class="disccord-captions" role="status" aria-live="polite" aria-atomic="false"></div>
     `;
@@ -163,4 +166,3 @@
     }
   }
 })();
-

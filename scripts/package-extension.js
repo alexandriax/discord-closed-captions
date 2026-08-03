@@ -7,7 +7,7 @@ import packageJson from "../package.json" with { type: "json" };
 const outputDirectory = resolve("dist");
 const outputPath = resolve(
   outputDirectory,
-  `disccord-extension-v${packageJson.version}.zip`,
+  `discord-closed-captions-extension-v${packageJson.version}.zip`,
 );
 
 mkdirSync(outputDirectory, { recursive: true });
@@ -19,4 +19,3 @@ execFileSync("zip", ["-q", "-r", outputPath, "."], {
 });
 
 console.log(outputPath);
-

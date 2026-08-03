@@ -37,4 +37,3 @@ test("Pcm16Resampler turns 48 kHz frames into 24 kHz 100 ms chunks", () => {
   assert.equal(chunks[0].length, 2400);
   assert.equal(chunks[0][0], floatToPcm16(0.25));
 });
-

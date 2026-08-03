@@ -143,7 +143,6 @@
     font-size: 18px;
   }
 }
-
 @media (prefers-reduced-motion: no-preference) {
   #disccord-overlay .disccord-caption {
     animation: disccord-caption-in 140ms ease-out;
@@ -156,4 +155,3 @@
     }
   }
 }
-

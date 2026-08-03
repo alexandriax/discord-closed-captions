@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Disccord — Live Captions",
-  "version": "0.1.0",
-  "description": "Live closed captions over Discord Web calls.",
+  "name": "Discord Closed Captions Extension",
+  "version": "0.2.0",
+  "description": "Chrome extension for adding closed captions to Discord calls via OpenAI's GPT-Live-Transcribe.",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
@@ -11,7 +11,8 @@
     "tabCapture"
   ],
   "host_permissions": [
-    "https://discord.com/*"
+    "https://discord.com/*",
+    "https://api.openai.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js",
@@ -24,7 +25,7 @@
     "128": "icons/icon-128.png"
   },
   "action": {
-    "default_title": "Start Disccord captions",
+    "default_title": "Start Discord closed captions",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",
@@ -48,6 +49,6 @@
   ],
   "options_page": "options.html",
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src ws://127.0.0.1:* ws://localhost:* wss://*"
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src https://api.openai.com wss://api.openai.com"
   }
 }

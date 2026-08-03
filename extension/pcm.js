@@ -68,4 +68,3 @@ export function floatToPcm16(sample) {
   const clamped = Math.max(-1, Math.min(1, sample));
   return Math.round(clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff);
 }
-

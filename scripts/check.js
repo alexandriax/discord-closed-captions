@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const roots = ["server", "extension", "scripts", "test"];
+const roots = ["extension", "scripts", "test"];
 const files = roots.flatMap((root) => findJavaScript(root));
 
 for (const file of files) {

@@ -1,7 +1,12 @@
 .env
+.env.*
+!.env.example
+*.key
+*.p12
+*.pem
+*.pfx
 node_modules/
 coverage/
 dist/
 *.log
 .DS_Store
-

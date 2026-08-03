@@ -1,10 +1,22 @@
+import {
+  configureStorageAccess,
+  getApiKeyState,
+  loadApiKey,
+} from "./key-vault.js";
 import { loadSettings } from "./settings.js";
 
 const SESSION_KEY = "disccordActiveTabId";
 const DISCORD_URL = /^https:\/\/discord\.com\//;
 
-chrome.runtime.onInstalled.addListener(() => {
+configureStorageAccess().catch(() => {});
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  await configureStorageAccess();
   chrome.action.setBadgeBackgroundColor({ color: "#5865f2" });
+
+  if (details.reason === "install") {
+    await chrome.runtime.openOptionsPage();
+  }
 });
 
 chrome.action.onClicked.addListener(async (tab) => {
@@ -27,7 +39,10 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.target !== "service-worker") {
+  if (
+    sender.id !== chrome.runtime.id ||
+    message?.target !== "service-worker"
+  ) {
     return undefined;
   }
 
@@ -44,6 +59,17 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 });
 
 async function startCapture(tab) {
+  const apiKey = await loadApiKey();
+  if (!apiKey) {
+    const keyState = await getApiKeyState();
+    await chrome.runtime.openOptionsPage();
+    throw new Error(
+      keyState.locked
+        ? "Unlock your OpenAI API key in the extension options first."
+        : "Add your OpenAI API key in the extension options first.",
+    );
+  }
+
   await ensureOffscreenDocument();
   const settings = await loadSettings();
   const streamId = await chrome.tabCapture.getMediaStreamId({
@@ -52,7 +78,7 @@ async function startCapture(tab) {
 
   await chrome.storage.session.set({ [SESSION_KEY]: tab.id });
   await setBadge(tab.id, "CC", "#5865f2");
-  await setActionTitle(tab.id, "Stop Disccord captions");
+  await setActionTitle(tab.id, "Stop Discord closed captions");
   await sendToTab(tab.id, {
     type: "disccord:status",
     status: "capturing",
@@ -64,6 +90,7 @@ async function startCapture(tab) {
     type: "disccord:start",
     streamId,
     tabId: tab.id,
+    apiKey,
     settings,
   });
 }
@@ -92,7 +119,7 @@ async function handleMessage(message, sender) {
       message.payload.fatal
     ) {
       await chrome.storage.session.remove(SESSION_KEY);
-      await setActionTitle(tabId, "Start Disccord captions");
+      await setActionTitle(tabId, "Start Discord closed captions");
     }
 
     if (message.payload?.type === "disccord:stopped") {
@@ -138,7 +165,7 @@ async function updateBadgeForEvent(tabId, event) {
 async function clearActiveState(tabId) {
   await chrome.storage.session.remove(SESSION_KEY);
   await setBadge(tabId, "", "#5865f2");
-  await setActionTitle(tabId, "Start Disccord captions");
+  await setActionTitle(tabId, "Start Discord closed captions");
 }
 
 async function getActiveTabId() {

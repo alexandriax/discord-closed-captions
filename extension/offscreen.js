@@ -1,3 +1,10 @@
+import {
+  BrowserRealtimeTranscriber,
+  mapOpenAIEvent,
+  sanitizeOpenAIError,
+} from "./openai-realtime.js";
+
+let apiKey = "";
 let audioContext = null;
 let captureStream = null;
 let captureTabId = null;
@@ -5,11 +12,11 @@ let reconnectAttempt = 0;
 let reconnectTimer = null;
 let settings = null;
 let shouldReconnect = false;
-let socket = null;
+let transcriber = null;
 let workletNode = null;
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.target !== "offscreen") {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id || message?.target !== "offscreen") {
     return undefined;
   }
 
@@ -39,6 +46,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 async function startCapture(message) {
   stopCapture({ notify: false });
 
+  apiKey = message.apiKey;
   captureTabId = message.tabId;
   settings = message.settings;
   shouldReconnect = true;
@@ -65,7 +73,7 @@ async function startCapture(message) {
 
   const source = audioContext.createMediaStreamSource(captureStream);
 
-  // Tab capture silences normal tab playback unless it is routed back out.
+  // Chrome mutes captured tab playback unless the stream is routed back out.
   source.connect(audioContext.destination);
 
   workletNode = new AudioWorkletNode(audioContext, "disccord-pcm-capture", {
@@ -79,92 +87,73 @@ async function startCapture(message) {
   source.connect(workletNode);
 
   workletNode.port.onmessage = (event) => {
-    if (
-      event.data?.type === "audio" &&
-      socket?.readyState === WebSocket.OPEN
-    ) {
-      socket.send(event.data.buffer);
+    if (event.data?.type !== "audio" || !transcriber) {
+      return;
+    }
+
+    try {
+      transcriber.appendAudio(event.data.buffer);
+    } catch (error) {
+      emit({ type: "disccord:error", message: error.message });
     }
   };
 
   emit({
     type: "disccord:status",
     status: "capturing",
-    message: "Discord audio captured. Connecting…",
+    message: "Discord audio captured. Connecting to OpenAI…",
   });
-  connectRelay();
+  connectOpenAI();
 }
 
-function connectRelay() {
+function connectOpenAI() {
   clearTimeout(reconnectTimer);
+  transcriber?.close();
 
-  try {
-    socket = new WebSocket(settings.relayUrl);
-  } catch (error) {
-    scheduleReconnect(error.message);
-    return;
-  }
-
-  socket.binaryType = "arraybuffer";
-
-  socket.addEventListener("open", () => {
-    reconnectAttempt = 0;
-    socket.send(
-      JSON.stringify({
-        type: "start",
-        accessKey: settings.accessKey,
-        config: {
-          languages: settings.languages,
-          keywords: settings.keywords,
-          prompt: settings.prompt,
-        },
-      }),
-    );
+  const connection = new BrowserRealtimeTranscriber({
+    apiKey,
+    settings,
+    onEvent: (event) => {
+      if (transcriber !== connection) {
+        return;
+      }
+      const mapped = mapOpenAIEvent(event);
+      if (mapped) {
+        if (mapped.status === "ready") {
+          reconnectAttempt = 0;
+        }
+        emit(mapped);
+      }
+    },
+    onClose: (code, reason) => {
+      if (transcriber === connection && shouldReconnect && code !== 1000) {
+        scheduleReconnect(
+          reason || "The OpenAI transcription connection closed.",
+        );
+      }
+    },
   });
+  transcriber = connection;
 
-  socket.addEventListener("message", (event) => {
-    try {
-      const message = JSON.parse(event.data);
-      emit(mapRelayEvent(message));
-    } catch {
-      emit({
-        type: "disccord:error",
-        message: "The relay sent an unreadable message.",
-      });
-    }
-  });
-
-  socket.addEventListener("error", () => {
-    emit({
-      type: "disccord:error",
-      message: "Could not reach the Disccord relay.",
-    });
-  });
-
-  socket.addEventListener("close", (event) => {
-    if (event.code === 1008) {
-      shouldReconnect = false;
-      emit({
-        type: "disccord:error",
-        message: event.reason || "The relay rejected this caption session.",
-      });
-      return;
-    }
-
-    if (shouldReconnect && event.code !== 1000) {
-      scheduleReconnect(
-        event.reason || "The relay connection closed unexpectedly.",
-      );
+  connection.connect().catch((error) => {
+    if (transcriber === connection) {
+      scheduleReconnect(error.message);
     }
   });
 }
 
 function scheduleReconnect(reason) {
+  const safeReason =
+    sanitizeOpenAIError(reason) || "OpenAI live transcription is unavailable.";
+
   if (!shouldReconnect || reconnectAttempt >= 4) {
+    shouldReconnect = false;
     emit({
       type: "disccord:error",
-      message: `${reason} Open the extension options to check the relay URL.`,
+      fatal: true,
+      message: `${safeReason} Open the extension options to check your API key.`,
     });
+    stopCapture({ notify: false });
     return;
   }
 
@@ -173,26 +162,18 @@ function scheduleReconnect(reason) {
   emit({
     type: "disccord:status",
     status: "connecting",
-    message: `Relay unavailable. Retrying in ${delay / 1000}s…`,
+    message: `OpenAI unavailable. Retrying in ${delay / 1000}s…`,
   });
-  reconnectTimer = setTimeout(connectRelay, delay);
+  reconnectTimer = setTimeout(connectOpenAI, delay);
 }
 
 function stopCapture({ notify = true } = {}) {
   shouldReconnect = false;
   clearTimeout(reconnectTimer);
+  reconnectTimer = null;
 
-  if (
-    socket &&
-    socket.readyState !== WebSocket.CLOSED &&
-    socket.readyState !== WebSocket.CLOSING
-  ) {
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: "stop" }));
-    }
-    socket.close(1000, "Captions stopped");
-  }
-  socket = null;
+  transcriber?.close();
+  transcriber = null;
 
   workletNode?.disconnect();
   workletNode = null;
@@ -209,44 +190,10 @@ function stopCapture({ notify = true } = {}) {
     emit({ type: "disccord:stopped" });
   }
 
+  apiKey = "";
   captureTabId = null;
   settings = null;
   reconnectAttempt = 0;
-}
-
-function mapRelayEvent(message) {
-  if (message.type === "caption") {
-    return {
-      type: "disccord:caption",
-      final: message.final,
-      itemId: message.itemId,
-      text: message.text,
-    };
-  }
-
-  if (message.type === "error") {
-    return {
-      type: "disccord:error",
-      code: message.code,
-      message: message.message,
-    };
-  }
-
-  return {
-    type: "disccord:status",
-    status: message.status || "connecting",
-    message: statusMessage(message.status),
-  };
-}
-
-function statusMessage(status) {
-  const messages = {
-    waiting: "Relay connected. Starting transcription…",
-    connecting: "Connecting to live transcription…",
-    connected: "Live transcription connected…",
-    ready: "Live captions are on",
-  };
-  return messages[status] || "Starting live captions…";
 }
 
 function emit(payload) {

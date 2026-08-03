@@ -1,22 +1,16 @@
 {
-  "name": "disccord",
-  "version": "0.1.0",
+  "name": "discord-closed-captions-extension",
+  "version": "0.2.0",
   "private": true,
-  "description": "Live closed captions for Discord Web calls",
+  "description": "Chrome extension for adding closed captions to Discord calls via OpenAI's GPT-Live-Transcribe",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
     "check": "node scripts/check.js",
     "package:extension": "npm run check && node scripts/package-extension.js",
-    "test": "node --test --test-reporter=spec test/unit/*.test.js",
-    "test:live": "node --test --test-reporter=spec test/live/*.test.js"
-  },
-  "dependencies": {
-    "dotenv": "^17.4.2",
-    "ws": "^8.21.1"
+    "preview": "node scripts/preview-options.js",
+    "test": "node --test --test-reporter=spec test/unit/*.test.js"
   }
 }
