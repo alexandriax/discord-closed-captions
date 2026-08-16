@@ -4,7 +4,12 @@ import test from "node:test";
 import {
   decryptApiKey,
   encryptApiKey,
+  getApiKeyState,
+  loadApiKey,
   normalizeApiKey,
+  storeDeviceApiKey,
+  storeEncryptedApiKey,
+  unlockApiKey,
 } from "../../extension/key-vault.js";
 
 const API_KEY = "definitely-not-a-real-api-key-0123456789";
@@ -35,3 +40,70 @@ test("API key normalization rejects missing and malformed values", () => {
     /valid OpenAI API key/,
   );
 });
+
+test("device storage keeps the API key after session storage is cleared", async () => {
+  globalThis.chrome = createChromeStorageMock();
+
+  await storeDeviceApiKey(API_KEY);
+  await chrome.storage.session.clear();
+
+  assert.equal(await loadApiKey(), API_KEY);
+  assert.deepEqual(await getApiKeyState(), {
+    available: true,
+    hasDeviceKey: true,
+    hasVault: false,
+    locked: false,
+    mode: "device",
+  });
+});
+
+test("encrypted vault survives a browser session and unlocks without the API key", async () => {
+  globalThis.chrome = createChromeStorageMock();
+
+  await storeEncryptedApiKey(API_KEY, PASSPHRASE);
+  await chrome.storage.session.clear();
+
+  assert.equal(await loadApiKey(), "");
+  assert.equal((await getApiKeyState()).locked, true);
+  assert.equal(await unlockApiKey(PASSPHRASE), API_KEY);
+  assert.equal(await loadApiKey(), API_KEY);
+});
+
+function createChromeStorageMock() {
+  return {
+    storage: {
+      local: createStorageArea(),
+      session: createStorageArea(),
+    },
+  };
+}
+
+function createStorageArea() {
+  const data = {};
+  return {
+    async get(keys) {
+      if (typeof keys === "string") {
+        return keys in data ? { [keys]: data[keys] } : {};
+      }
+      if (Array.isArray(keys)) {
+        return Object.fromEntries(
+          keys.filter((key) => key in data).map((key) => [key, data[key]]),
+        );
+      }
+      return { ...(keys || {}), ...data };
+    },
+    async set(values) {
+      Object.assign(data, values);
+    },
+    async remove(keys) {
+      for (const key of Array.isArray(keys) ? keys : [keys]) {
+        delete data[key];
+      }
+    },
+    async clear() {
+      for (const key of Object.keys(data)) {
+        delete data[key];
+      }
+    },
+  };
+}

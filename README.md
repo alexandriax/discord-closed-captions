@@ -16,13 +16,17 @@ Discord bot, or Discord account token.
 
 ## Features
 
-- One-click start and stop from the Chrome toolbar
+- Start and stop controls in a compact Chrome toolbar popup
 - Live partial captions and finalized caption segments
 - A readable caption overlay inside Discord, including fullscreen calls
+- A locally saved latest-session transcript, on by default and viewable in the popup
+- Best-effort Discord speaker names with explicit overlap ambiguity
+- Speaker detection that follows active indicators across calls with dozens of participants
+- Optional local-microphone transcription, off by default
 - Continued Discord audio playback while tab capture is active
 - Direct Realtime API connection using `gpt-live-transcribe`
-- No stored audio, transcripts, Discord credentials, or call history
-- Session-only API key storage by default
+- No stored audio, Discord credentials, private gateway access, or hosted call history
+- Durable device-local API key storage by default
 - Optional passphrase-encrypted local API key vault
 - Language, vocabulary, and call-context hints
 
@@ -36,7 +40,10 @@ flowchart LR
     T --> D["OpenAI Realtime API<br/>gpt-live-transcribe"]
     C --> D
     D --> E["Streaming transcript events"]
-    E --> F["Caption overlay in Discord"]
+    S["Discord speaking indicators"] --> X["Local time-window attribution"]
+    E --> X
+    X --> F["Caption overlay in Discord"]
+    X --> L["Latest transcript in extension storage"]
 ```
 
 The standard API key is used from a trusted extension context to call OpenAI's
@@ -44,10 +51,18 @@ Realtime client-secret endpoint. The resulting short-lived credential
 authenticates the browser WebSocket. The standard key is never sent to Discord,
 the Discord content script, a project server, or a URL.
 
-Only the tab's rendered output is captured. In a typical call, that includes
-the remote participant and Discord notification sounds. The local microphone
-is normally not played into the tab, so it is not normally transcribed by this
-extension.
+Only the tab's rendered output is captured by default. In a typical call, that
+includes remote participants and Discord notification sounds. If **Transcribe
+my microphone** is enabled, the extension mixes the local microphone into the
+transcription stream without playing it back through the speakers.
+
+Speaker attribution runs alongside transcription and never blocks caption
+delivery. The content script samples Discord's visible speaking indicators,
+then scores the indicators that were active during the recent transcription
+window. A dominant match is shown as one name; comparable overlap is shown as
+`Alex or Sam`. The extension does not read Discord account tokens, connect to a
+private Discord gateway, or retain a fixed participant roster, so the same
+mechanism works as participants join and leave large calls.
 
 ## Requirements
 
@@ -73,22 +88,31 @@ The options page opens after the first installation.
 
 Enter an API key in the extension options and choose one of the storage modes:
 
-### Until Chrome closes — recommended
+### Remember on this device — recommended
 
-The plaintext key is kept in `chrome.storage.session`, which is memory-backed,
-restricted to trusted extension contexts, and cleared when Chrome restarts or
-the extension reloads. Nothing secret is persisted to disk by the extension.
+The key is kept in `chrome.storage.local`, restricted to trusted extension
+contexts, and remains available after Chrome restarts and extension reloads.
+This is the least-friction option. It is not passphrase-encrypted, so use the
+encrypted vault instead on a shared or less-trusted Chrome profile.
 
 ### Encrypted vault
 
 The extension encrypts the API key with AES-256-GCM using a key derived from a
 separate passphrase with PBKDF2-SHA-256. Only the ciphertext, salt, IV, and
-format metadata are persisted in `chrome.storage.local`. The plaintext key is
-placed in trusted session storage only after the vault is unlocked.
+format metadata are persisted in `chrome.storage.local`. After Chrome restarts,
+the toolbar popup asks for the passphrase; the API key itself does not need to
+be entered again. The plaintext key is placed in trusted session storage only
+after the vault is unlocked.
 
 Use a strong, unique passphrase. It cannot be recovered if forgotten.
 
-Neither mode uses `chrome.storage.sync`, and the options page never restores a
+### Until Chrome closes
+
+The plaintext key is kept in `chrome.storage.session`, which is memory-backed,
+restricted to trusted extension contexts, and cleared when Chrome restarts or
+the extension reloads. Nothing secret is persisted to disk by the extension.
+
+No storage mode uses `chrome.storage.sync`, and the options page never restores a
 saved API key into an HTML input.
 
 ### Security boundary
@@ -109,11 +133,15 @@ rotate the key if anything looks unexpected.
 1. Join a call in Discord Web.
 2. Confirm everyone has consented to live transcription.
 3. Click the extension's toolbar icon in the active Discord tab.
-4. Watch the status indicator turn green when live captions are ready.
-5. Click the toolbar icon again—or the close button above the captions—to stop.
+4. Choose **Start** in the popup.
+5. Watch the status indicator turn green when live captions are ready.
+6. Open the popup at any time to review the transcript or quick settings.
+7. Choose **Stop**—or the close button above the captions—to stop.
 
 Chrome displays its normal capture indicator while the extension is listening
-to the selected tab. Captions and audio are not retained after they are shown.
+to the selected tab. Audio is never retained. When transcript saving is on,
+only finalized text and best-effort speaker labels for the latest session are
+stored locally; **Clear** in the popup removes them.
 
 ## Caption settings
 
@@ -124,6 +152,12 @@ The extension options include:
 | Expected languages | Comma-separated language codes such as `en, es` |
 | Vocabulary hints | Names, places, acronyms, and other expected terms |
 | Call context | Short, non-sensitive context that can improve transcription |
+| Save latest transcript | Stores finalized captions locally; on by default |
+| Show Discord speaker names | Attributes recent speaking indicators; on by default |
+| Transcribe my microphone | Includes and labels local speech; off by default |
+
+The three session-feature switches are also available directly in the toolbar
+popup. Microphone changes apply when the next caption session starts.
 
 ## Permissions
 
@@ -132,13 +166,14 @@ The extension options include:
 | `activeTab` | Limits toolbar actions to the user-selected active tab |
 | `tabCapture` | Captures audio from the active Discord Web tab after a toolbar click |
 | `offscreen` | Keeps audio processing active outside the Discord page |
-| `storage` | Stores preferences, session key state, and optional encrypted vault data |
+| `storage` | Stores preferences, key state, optional encrypted vault data, and the optional latest transcript |
 | `https://discord.com/*` | Injects and updates the caption overlay |
 | `https://api.openai.com/*` | Creates a short-lived session credential and connects to transcription |
 
 The content security policy permits network connections only to OpenAI. The
 extension contains no remote JavaScript and accepts messages only from its own
-extension ID.
+extension ID. Optional microphone capture uses the browser's normal permission
+prompt when the user enables it.
 
 ## Privacy and consent
 
@@ -146,17 +181,33 @@ While captions are active, captured tab audio is sent directly to OpenAI for
 processing. Review [OpenAI's API data usage policies](https://openai.com/policies/api-data-usage-policies/)
 for current service details.
 
-The extension itself does not record calls or persist audio or transcripts.
+The extension itself does not record or persist audio. Latest-session transcript
+storage is on by default, remains local to the extension, is bounded to 500
+entries/120,000 characters, and can be disabled or cleared in the popup.
 Recording and interception laws vary by location; this project is not legal
 advice. Do not use it on calls where you are not a participant or where the
 other participants have not consented.
 
 ## Troubleshooting
 
-### Clicking the icon opens settings
+### The popup says the key is missing or locked
 
-The API key is missing or the encrypted vault is locked. Save a session key or
-unlock the vault, return to the Discord tab, and click the icon again.
+The API key is missing or the encrypted vault is locked. Add a key in settings
+or unlock the saved vault directly in the popup, then choose **Start**.
+
+### Speaker name is missing or ambiguous
+
+Attribution is best effort because Discord does not expose its authenticated
+speaking event stream to ordinary content extensions. Keep the voice roster or
+call tiles mounted so speaking indicators exist in the DOM. When comparable
+indicators overlap, the extension intentionally shows both likely names rather
+than inventing certainty.
+
+### My voice is not transcribed
+
+Enable **Transcribe my microphone**, allow microphone access, then start a new
+caption session. The setting is off by default and does not alter a session that
+is already running.
 
 ### OpenAI rejects the session
 
@@ -168,8 +219,8 @@ credits.
 
 - Confirm the active tab is on `https://discord.com/`.
 - Confirm the call audio is actually playing from that tab.
-- Reload the unpacked extension after pulling code changes, then re-enter or
-  unlock the API key.
+- Reload the unpacked extension after pulling code changes, then confirm the
+  saved key is ready or unlock the encrypted vault.
 - Check the extension service worker and offscreen-document consoles from
   `chrome://extensions` for sanitized error messages.
 
@@ -189,7 +240,7 @@ npm run check
 npm test
 ```
 
-Preview the options page without installing the extension:
+Preview the options page and popup without installing the extension:
 
 ```bash
 npm run preview
@@ -203,7 +254,8 @@ npm run package:extension
 
 The checks validate all JavaScript syntax and keep the package and extension
 versions aligned. Unit tests cover PCM conversion, settings normalization,
-encrypted-vault round trips, Realtime session configuration, token exchange,
+encrypted-vault round trips and restart persistence, Realtime session
+configuration, token exchange, transcript storage, large-call speaker scoring,
 and transcript event mapping.
 
 ## Repository layout
@@ -215,7 +267,10 @@ and transcript event mapping.
 │   ├── key-vault.js      # Session and passphrase-encrypted BYOK storage
 │   ├── openai-realtime.js # Direct OpenAI Realtime client
 │   ├── offscreen.js      # Tab audio capture and streaming lifecycle
-│   └── content.js        # Discord caption overlay
+│   ├── popup.*            # Toolbar controls and latest transcript
+│   ├── speaker-attribution.js # Time-window attribution scoring
+│   ├── transcript-store.js # Bounded latest-session text storage
+│   └── content.js        # Discord overlay and speaking-indicator detection
 ├── scripts/              # Checks, preview server, and packaging
 ├── test/unit/            # Deterministic unit tests
 ├── LICENSE

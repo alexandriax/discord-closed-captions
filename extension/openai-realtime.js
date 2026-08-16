@@ -255,6 +255,11 @@ export function mapOpenAIEvent(event) {
         status: "ready",
         message: "Live captions are on",
       };
+    case "input_audio_buffer.committed":
+      return {
+        type: "disccord:segment-committed",
+        itemId: event.item_id,
+      };
     case "conversation.item.input_audio_transcription.delta":
       return {
         type: "disccord:caption",

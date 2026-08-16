@@ -229,6 +229,13 @@ legend {
   accent-color: #5865f2;
 }
 
+.feature-list {
+  padding: 17px;
+  border: 1px solid rgb(88 101 242 / 18%);
+  border-radius: 12px;
+  background: rgb(88 101 242 / 5%);
+}
+
 .storage-choice > span {
   display: grid;
   gap: 4px;

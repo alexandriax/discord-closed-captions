@@ -66,6 +66,17 @@ test("mintEphemeralToken exchanges the user key without returning it", async () 
 test("mapOpenAIEvent maps streaming and completed transcripts", () => {
   assert.deepEqual(
     mapOpenAIEvent({
+      type: "input_audio_buffer.committed",
+      item_id: "item-1",
+    }),
+    {
+      type: "disccord:segment-committed",
+      itemId: "item-1",
+    },
+  );
+
+  assert.deepEqual(
+    mapOpenAIEvent({
       type: "conversation.item.input_audio_transcription.delta",
       item_id: "item-1",
       delta: "Good ",

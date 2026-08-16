@@ -1,6 +1,6 @@
 {
   "name": "discord-closed-captions-extension",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Chrome extension for adding closed captions to Discord calls via OpenAI's GPT-Live-Transcribe",
   "type": "module",
