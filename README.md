@@ -70,6 +70,23 @@ Discord account tokens, connect to a private Discord gateway, or retain a fixed
 participant roster, so the same mechanism works as participants join and leave
 large calls.
 
+### Overlapping speech and future diarization
+
+The current implementation does not analyze voice frequencies, create
+voiceprints, or separate a mixed transcript into per-speaker words. When two
+people speak during the same transcription window, it uses the timing of
+Discord's speaking indicators and reports up to two plausible names, such as
+`Alex or Sam`.
+
+A possible next step is acoustic speaker diarization: use spectral and other
+audio features to find speaker turns and overlapping voices, optionally compare
+speaker embeddings (sometimes called voiceprints) with consented participant
+samples, then combine those confidence scores with Discord's speaking
+indicators. Frequency alone is not sufficient for reliable identification. Any
+voiceprint-based design should be opt-in, disclose how derived voice data is
+handled, and retain the current ambiguous or unknown label when confidence is
+low.
+
 ## Requirements
 
 - Chrome 116 or newer
