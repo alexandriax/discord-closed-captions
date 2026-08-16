@@ -40,6 +40,7 @@
         "https://discord.com/*"
       ],
       "js": [
+        "speaker-dom.js",
         "content.js"
       ],
       "css": [

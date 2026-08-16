@@ -1,6 +1,7 @@
 (() => {
   const CAPTION_LIFETIME_MS = 12_000;
   const MAX_CAPTIONS = 3;
+  const { findSpeakerName, isSpeaking } = globalThis.DisccordSpeakerDom;
 
   let overlay;
   let captionList;
@@ -83,7 +84,7 @@
     overlay
       .querySelector(".disccord-close")
       .addEventListener("click", () => {
-        chrome.runtime.sendMessage({
+        sendRuntimeMessage({
           target: "service-worker",
           type: "disccord:stop-request",
         });
@@ -213,121 +214,44 @@
       }
     }
 
-    chrome.runtime
-      .sendMessage({
-        target: "service-worker",
-        type: "disccord:speakers",
-        speakers: [...speakers],
-        selfName: findSelfName(),
-        at: Date.now(),
-      })
-      .catch(() => {});
+    sendRuntimeMessage({
+      target: "service-worker",
+      type: "disccord:speakers",
+      speakers: [...speakers],
+      selfName: findSelfName(),
+      at: Date.now(),
+    });
   }
 
-  function isSpeaking(element) {
-    const className = getClassName(element);
-    const ariaLabel = element.getAttribute("aria-label") || "";
-    if (
-      element.dataset.speaking === "true" ||
-      /speaking/i.test(className) ||
-      /\bspeaking\b/i.test(ariaLabel)
-    ) {
-      return true;
-    }
-
-    if (!/(border|avatar|voice|tile|participant)/i.test(className)) {
-      return false;
-    }
-    const style = getComputedStyle(element);
-    return isDiscordSpeakingGreen(
-      [
-        style.borderColor,
-        style.boxShadow,
-        style.outlineColor,
-        style.getPropertyValue("--__adaptive-focus-ring-color"),
-      ].join(" "),
-    );
-  }
-
-  function isDiscordSpeakingGreen(value) {
-    return /(?:rgb\(\s*)?(?:35\s*,\s*165\s*,\s*9[01]|46\s*,\s*204\s*,\s*113)|#23a55a|#2ecc71/i.test(
-      value,
-    );
-  }
-
-  function findSpeakerName(element) {
-    const labelledName = cleanSpeakerName(element.getAttribute("aria-label"));
-    if (labelledName) {
-      return labelledName;
-    }
-
-    let container = element;
-    for (let depth = 0; container && depth < 8; depth += 1) {
-      const semanticContainer =
-        container.closest?.('[data-list-item-id^="voice-users-"]') || container;
-      const name = findNameWithin(semanticContainer);
-      if (name) {
-        return name;
+  function sendRuntimeMessage(message) {
+    try {
+      if (!chrome.runtime?.id) {
+        stopSpeakerMonitoring();
+        return Promise.resolve(undefined);
       }
-      container = container.parentElement;
+      return chrome.runtime.sendMessage(message).catch((error) => {
+        handleRuntimeError(error);
+        return undefined;
+      });
+    } catch (error) {
+      handleRuntimeError(error);
+      return Promise.resolve(undefined);
     }
-    return "";
   }
 
-  function findNameWithin(container) {
-    const selectors = [
-      '[class*="username_"]',
-      '[class*="name_"]',
-      '[class*="nickname_"]',
-      '[data-text-variant="text-sm/medium"]',
-      "img[alt]",
-    ];
-    for (const selector of selectors) {
-      const element = container.matches?.(selector)
-        ? container
-        : container.querySelector?.(selector);
-      const value =
-        element?.getAttribute?.("alt") ||
-        element?.getAttribute?.("aria-label") ||
-        element?.textContent;
-      const name = cleanSpeakerName(value);
-      if (name) {
-        return name;
-      }
+  function handleRuntimeError(error) {
+    if (/extension context invalidated/i.test(error?.message || "")) {
+      stopSpeakerMonitoring();
     }
-    return "";
   }
 
   function findSelfName() {
     const userPanel = document.querySelector(
       '[class*="panels_"] [class*="nameTag_"], [aria-label="User area"] [class*="name_"]',
     );
-    return cleanSpeakerName(userPanel?.textContent) || "You";
-  }
-
-  function cleanSpeakerName(value) {
-    if (typeof value !== "string") {
-      return "";
-    }
-    const firstLine = value
-      .split(/[\n\r,|]/)[0]
-      .replace(/\b(?:is )?speaking\b/gi, "")
-      .replace(/\b(?:muted|deafened|camera on|camera off)\b/gi, "")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (
-      !firstLine ||
-      firstLine.length > 80 ||
-      /^(?:speaking|voice connected|user area)$/i.test(firstLine)
-    ) {
-      return "";
-    }
-    return firstLine;
-  }
-
-  function getClassName(element) {
-    return typeof element.className === "string"
-      ? element.className
-      : element.getAttribute("class") || "";
+    return (
+      globalThis.DisccordSpeakerDom.cleanSpeakerName(userPanel?.textContent) ||
+      "You"
+    );
   }
 })();

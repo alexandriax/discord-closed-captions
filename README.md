@@ -20,8 +20,10 @@ Discord bot, or Discord account token.
 - Live partial captions and finalized caption segments
 - A readable caption overlay inside Discord, including fullscreen calls
 - A locally saved latest-session transcript, on by default and viewable in the popup
-- Best-effort Discord speaker names with explicit overlap ambiguity
-- Speaker detection that follows active indicators across calls with dozens of participants
+- Best-effort Discord speaker names in both overlay captions and saved transcripts
+- Speaker detection from Discord's current call-tile speaking rings and accessible participant labels
+- Explicit overlap ambiguity across calls with dozens of participants
+- Graceful cleanup of stale monitoring when an unpacked extension is reloaded
 - Optional local-microphone transcription, off by default
 - Continued Discord audio playback while tab capture is active
 - Direct Realtime API connection using `gpt-live-transcribe`
@@ -57,12 +59,15 @@ my microphone** is enabled, the extension mixes the local microphone into the
 transcription stream without playing it back through the speakers.
 
 Speaker attribution runs alongside transcription and never blocks caption
-delivery. The content script samples Discord's visible speaking indicators,
-then scores the indicators that were active during the recent transcription
-window. A dominant match is shown as one name; comparable overlap is shown as
-`Alex or Sam`. The extension does not read Discord account tokens, connect to a
-private Discord gateway, or retain a fixed participant roster, so the same
-mechanism works as participants join and leave large calls.
+delivery. The content script samples Discord's visible call-tile speaking rings,
+including rings painted with CSS shadows, and reads the participant names that
+Discord exposes through accessible tile and avatar labels. It then scores the
+indicators that were active during the recent transcription window. A dominant
+match is shown as one name in both the page overlay and saved transcript;
+comparable overlap is shown as `Alex or Sam`. The extension does not read
+Discord account tokens, connect to a private Discord gateway, or retain a fixed
+participant roster, so the same mechanism works as participants join and leave
+large calls.
 
 ## Requirements
 
@@ -201,7 +206,8 @@ Attribution is best effort because Discord does not expose its authenticated
 speaking event stream to ordinary content extensions. Keep the voice roster or
 call tiles mounted so speaking indicators exist in the DOM. When comparable
 indicators overlap, the extension intentionally shows both likely names rather
-than inventing certainty.
+than inventing certainty. Speaker labels are assigned as new captions arrive;
+previously saved `Unknown speaker` entries are not renamed retroactively.
 
 ### My voice is not transcribed
 
@@ -220,7 +226,9 @@ credits.
 - Confirm the active tab is on `https://discord.com/`.
 - Confirm the call audio is actually playing from that tab.
 - Reload the unpacked extension after pulling code changes, then confirm the
-  saved key is ready or unlock the encrypted vault.
+  saved key is ready or unlock the encrypted vault. Reloading stops any stale
+  speaker-monitoring loop from the previous extension context; refresh the
+  Discord tab before starting captions again.
 - Check the extension service worker and offscreen-document consoles from
   `chrome://extensions` for sanitized error messages.
 
@@ -256,7 +264,8 @@ The checks validate all JavaScript syntax and keep the package and extension
 versions aligned. Unit tests cover PCM conversion, settings normalization,
 encrypted-vault round trips and restart persistence, Realtime session
 configuration, token exchange, transcript storage, large-call speaker scoring,
-and transcript event mapping.
+Discord speaking-ring and accessible-name detection, and transcript event
+mapping.
 
 ## Repository layout
 
@@ -269,8 +278,9 @@ and transcript event mapping.
 │   ├── offscreen.js      # Tab audio capture and streaming lifecycle
 │   ├── popup.*            # Toolbar controls and latest transcript
 │   ├── speaker-attribution.js # Time-window attribution scoring
+│   ├── speaker-dom.js     # Speaking-ring detection and participant-name lookup
 │   ├── transcript-store.js # Bounded latest-session text storage
-│   └── content.js        # Discord overlay and speaking-indicator detection
+│   └── content.js        # Discord overlay and speaker-monitoring lifecycle
 ├── scripts/              # Checks, preview server, and packaging
 ├── test/unit/            # Deterministic unit tests
 ├── LICENSE
