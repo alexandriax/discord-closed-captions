@@ -59,14 +59,15 @@
               <input
                 type="radio"
                 name="storageMode"
-                value="session"
+                value="device"
                 checked
               />
               <span>
-                <strong>Until Chrome closes</strong>
+                <strong>Remember on this device</strong>
                 <small>
-                  Recommended. Kept in memory-backed extension session storage;
-                  enter it again after Chrome restarts.
+                  Recommended. Persists in storage restricted to this extension,
+                  so Chrome restarts do not erase it. This mode is not
+                  passphrase-encrypted.
                 </small>
               </span>
             </label>
@@ -76,7 +77,18 @@
                 <strong>Encrypted vault</strong>
                 <small>
                   Persist encrypted ciphertext locally and unlock it with a
-                  separate passphrase after Chrome restarts.
+                  separate passphrase after Chrome restarts. You will not need
+                  to enter the API key again.
+                </small>
+              </span>
+            </label>
+            <label class="storage-choice">
+              <input type="radio" name="storageMode" value="session" />
+              <span>
+                <strong>Until Chrome closes</strong>
+                <small>
+                  Memory-backed session storage. The key is intentionally
+                  erased when Chrome restarts or the extension reloads.
                 </small>
               </span>
             </label>
@@ -150,6 +162,40 @@
         </div>
 
         <form id="settings-form">
+          <fieldset class="feature-list">
+            <legend>Session features</legend>
+            <label class="storage-choice">
+              <input type="checkbox" name="saveTranscripts" />
+              <span>
+                <strong>Save the latest session transcript</strong>
+                <small>
+                  On by default. Stores finalized captions locally so the full
+                  transcript is available from the toolbar popup.
+                </small>
+              </span>
+            </label>
+            <label class="storage-choice">
+              <input type="checkbox" name="speakerAttribution" />
+              <span>
+                <strong>Show Discord speaker names</strong>
+                <small>
+                  On by default. Matches captions to Discord's speaking
+                  indicators without delaying live text.
+                </small>
+              </span>
+            </label>
+            <label class="storage-choice">
+              <input type="checkbox" name="transcribeSelf" />
+              <span>
+                <strong>Transcribe my microphone</strong>
+                <small>
+                  Off by default. Mixes your microphone into transcription and
+                  labels detected local speech with your Discord name or “You.”
+                </small>
+              </span>
+            </label>
+          </fieldset>
+
           <div class="columns">
             <label>
               <span>Expected languages</span>
@@ -192,8 +238,10 @@
       <aside>
         <strong>Privacy and consent</strong>
         While captions are on, the extension sends the Discord tab's rendered
-        audio directly to OpenAI for transcription. It does not save audio or
-        transcripts. Tell everyone in the call and get their consent first.
+        audio—and your microphone only if you enable it—directly to OpenAI for
+        transcription. It never saves audio. The optional latest-session
+        transcript remains in extension-local storage until replaced or
+        cleared. Tell everyone in the call and get their consent first.
       </aside>
     </main>
 

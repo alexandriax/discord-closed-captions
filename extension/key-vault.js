@@ -1,4 +1,5 @@
 const API_KEY_SESSION_KEY = "discordClosedCaptionsApiKey";
+const API_KEY_DEVICE_KEY = "discordClosedCaptionsDeviceApiKey";
 const KEY_MODE_LOCAL_KEY = "discordClosedCaptionsKeyMode";
 const VAULT_LOCAL_KEY = "discordClosedCaptionsKeyVault";
 const VAULT_VERSION = 1;
@@ -15,15 +16,22 @@ export async function configureStorageAccess() {
 export async function getApiKeyState() {
   const [session, local] = await Promise.all([
     chrome.storage.session.get(API_KEY_SESSION_KEY),
-    chrome.storage.local.get([KEY_MODE_LOCAL_KEY, VAULT_LOCAL_KEY]),
+    chrome.storage.local.get([
+      API_KEY_DEVICE_KEY,
+      KEY_MODE_LOCAL_KEY,
+      VAULT_LOCAL_KEY,
+    ]),
   ]);
 
-  const mode = local[KEY_MODE_LOCAL_KEY] === "vault" ? "vault" : "session";
-  const available = Boolean(session[API_KEY_SESSION_KEY]);
+  const mode = normalizeStorageMode(local[KEY_MODE_LOCAL_KEY], local);
+  const available = Boolean(
+    session[API_KEY_SESSION_KEY] || local[API_KEY_DEVICE_KEY],
+  );
   const hasVault = isVault(local[VAULT_LOCAL_KEY]);
 
   return {
     available,
+    hasDeviceKey: Boolean(local[API_KEY_DEVICE_KEY]),
     hasVault,
     locked: mode === "vault" && hasVault && !available,
     mode,
@@ -31,8 +39,14 @@ export async function getApiKeyState() {
 }
 
 export async function loadApiKey() {
-  const stored = await chrome.storage.session.get(API_KEY_SESSION_KEY);
-  return normalizeApiKey(stored[API_KEY_SESSION_KEY], { required: false });
+  const [session, local] = await Promise.all([
+    chrome.storage.session.get(API_KEY_SESSION_KEY),
+    chrome.storage.local.get(API_KEY_DEVICE_KEY),
+  ]);
+  return normalizeApiKey(
+    session[API_KEY_SESSION_KEY] || local[API_KEY_DEVICE_KEY],
+    { required: false },
+  );
 }
 
 export async function storeSessionApiKey(apiKey) {
@@ -40,7 +54,19 @@ export async function storeSessionApiKey(apiKey) {
   await Promise.all([
     chrome.storage.session.set({ [API_KEY_SESSION_KEY]: normalized }),
     chrome.storage.local.set({ [KEY_MODE_LOCAL_KEY]: "session" }),
+    chrome.storage.local.remove([API_KEY_DEVICE_KEY, VAULT_LOCAL_KEY]),
+  ]);
+}
+
+export async function storeDeviceApiKey(apiKey) {
+  const normalized = normalizeApiKey(apiKey);
+  await Promise.all([
+    chrome.storage.local.set({
+      [API_KEY_DEVICE_KEY]: normalized,
+      [KEY_MODE_LOCAL_KEY]: "device",
+    }),
     chrome.storage.local.remove(VAULT_LOCAL_KEY),
+    chrome.storage.session.remove(API_KEY_SESSION_KEY),
   ]);
 }
 
@@ -54,6 +80,7 @@ export async function storeEncryptedApiKey(apiKey, passphrase) {
       [KEY_MODE_LOCAL_KEY]: "vault",
       [VAULT_LOCAL_KEY]: vault,
     }),
+    chrome.storage.local.remove(API_KEY_DEVICE_KEY),
     chrome.storage.session.set({ [API_KEY_SESSION_KEY]: normalized }),
   ]);
 }
@@ -76,7 +103,11 @@ export async function lockApiKey() {
 export async function clearApiKey() {
   await Promise.all([
     chrome.storage.session.remove(API_KEY_SESSION_KEY),
-    chrome.storage.local.remove([KEY_MODE_LOCAL_KEY, VAULT_LOCAL_KEY]),
+    chrome.storage.local.remove([
+      API_KEY_DEVICE_KEY,
+      KEY_MODE_LOCAL_KEY,
+      VAULT_LOCAL_KEY,
+    ]),
   ]);
 }
 
@@ -199,6 +230,16 @@ function isVault(value) {
       typeof value.iv === "string" &&
       typeof value.ciphertext === "string",
   );
+}
+
+function normalizeStorageMode(value, local) {
+  if (value === "session" || value === "device" || value === "vault") {
+    return value;
+  }
+  if (isVault(local[VAULT_LOCAL_KEY])) {
+    return "vault";
+  }
+  return "device";
 }
 
 function requireCrypto(cryptoImpl) {

@@ -1,0 +1,296 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    Inter,
+    "gg sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: #111214;
+  color: #f2f3f5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  width: 390px;
+  max-height: 590px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 0 0, rgb(88 101 242 / 20%), transparent 18rem),
+    #111214;
+}
+
+main {
+  display: grid;
+  gap: 12px;
+  padding: 17px;
+}
+
+header,
+.brand,
+.capture-panel,
+.section-heading,
+.inline-control,
+.toggle-row {
+  display: flex;
+  align-items: center;
+}
+
+header,
+.section-heading,
+.toggle-row {
+  justify-content: space-between;
+}
+
+header {
+  gap: 12px;
+  padding: 1px 1px 3px;
+}
+
+.brand {
+  gap: 10px;
+}
+
+.brand img {
+  border-radius: 9px;
+  box-shadow: 0 8px 22px rgb(88 101 242 / 30%);
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+  color: #aeb7ff;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 15px;
+  letter-spacing: -0.015em;
+}
+
+.pill {
+  padding: 5px 8px;
+  border: 1px solid rgb(148 155 164 / 25%);
+  border-radius: 999px;
+  background: rgb(148 155 164 / 10%);
+  color: #c4c8ce;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.pill[data-state="ready"] {
+  border-color: rgb(35 165 90 / 35%);
+  background: rgb(35 165 90 / 12%);
+  color: #55d98a;
+}
+
+.pill[data-state="locked"] {
+  border-color: rgb(240 178 50 / 35%);
+  background: rgb(240 178 50 / 12%);
+  color: #f5c451;
+}
+
+.capture-panel,
+.quick-settings,
+.transcript-panel,
+.unlock-panel {
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 12px;
+  background: rgb(30 31 34 / 92%);
+}
+
+.capture-panel {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+}
+
+.capture-panel p,
+.transcript-meta,
+small {
+  color: #949ba4;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.capture-panel p {
+  margin-top: 4px;
+}
+
+button {
+  height: 34px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 7px;
+  background: #5865f2;
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #6874f4;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  border: 1px solid #45484f;
+  background: #2b2d31;
+}
+
+.link-button {
+  height: auto;
+  padding: 2px;
+  background: transparent;
+  color: #aeb7ff;
+}
+
+.link-button:hover {
+  background: transparent;
+  color: #d5d9ff;
+}
+
+.unlock-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.unlock-panel label {
+  color: #dbdee1;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.inline-control {
+  gap: 8px;
+}
+
+input[type="password"] {
+  min-width: 0;
+  height: 34px;
+  flex: 1;
+  padding: 0 10px;
+  border: 1px solid #3a3c43;
+  border-radius: 7px;
+  outline: 0;
+  background: #111214;
+  color: #fff;
+  font: inherit;
+}
+
+.quick-settings,
+.transcript-panel {
+  padding: 13px 14px;
+}
+
+.quick-settings .section-heading {
+  margin-bottom: 6px;
+}
+
+.toggle-row {
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid rgb(255 255 255 / 6%);
+  cursor: pointer;
+}
+
+.toggle-row span {
+  display: grid;
+  gap: 2px;
+}
+
+.toggle-row strong {
+  color: #e3e5e8;
+  font-size: 12px;
+}
+
+input[role="switch"] {
+  width: 34px;
+  height: 19px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: #5865f2;
+}
+
+.transcript-heading-row {
+  margin-bottom: 8px;
+}
+
+.transcript-meta {
+  margin-bottom: 8px;
+}
+
+.transcript {
+  max-height: 205px;
+  overflow: auto;
+  padding-right: 4px;
+  scrollbar-color: #45484f transparent;
+}
+
+.transcript-entry {
+  padding: 9px 0;
+  border-top: 1px solid rgb(255 255 255 / 6%);
+}
+
+.transcript-entry:first-child {
+  border-top: 0;
+}
+
+.transcript-speaker {
+  margin-bottom: 3px;
+  color: #aeb7ff;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+}
+
+.transcript-text {
+  color: #f2f3f5;
+  font-size: 12px;
+  line-height: 1.42;
+  white-space: pre-wrap;
+}
+
+.empty-state {
+  padding: 14px 0 4px;
+  color: #949ba4;
+  font-size: 12px;
+  text-align: center;
+}
+
+output {
+  min-height: 14px;
+  color: #b5bac1;
+  font-size: 11px;
+  text-align: center;
+}
+
+output[data-error="true"] {
+  color: #ff8d8f;
+}

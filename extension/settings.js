@@ -3,6 +3,9 @@ export const DEFAULT_SETTINGS = Object.freeze({
   keywords: ["Discord"],
   prompt:
     "A casual Discord call between friends. Transcribe only speech, not background sounds.",
+  saveTranscripts: true,
+  speakerAttribution: true,
+  transcribeSelf: false,
 });
 
 export async function loadSettings() {
@@ -22,6 +25,18 @@ export function normalizeSettings(settings = {}) {
     languages: cleanList(settings.languages, 6, 8),
     keywords: cleanList(settings.keywords, 30, 80),
     prompt: cleanString(settings.prompt, 500),
+    saveTranscripts: cleanBoolean(
+      settings.saveTranscripts,
+      DEFAULT_SETTINGS.saveTranscripts,
+    ),
+    speakerAttribution: cleanBoolean(
+      settings.speakerAttribution,
+      DEFAULT_SETTINGS.speakerAttribution,
+    ),
+    transcribeSelf: cleanBoolean(
+      settings.transcribeSelf,
+      DEFAULT_SETTINGS.transcribeSelf,
+    ),
   };
 }
 
@@ -48,4 +63,8 @@ function cleanList(value, maxItems, maxLength) {
         .filter(Boolean),
     ),
   ].slice(0, maxItems);
+}
+
+function cleanBoolean(value, fallback) {
+  return typeof value === "boolean" ? value : fallback;
 }

@@ -110,6 +110,9 @@
 }
 
 #disccord-overlay .disccord-caption {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
   width: fit-content;
   max-width: 100%;
   margin: 0;
@@ -126,6 +129,18 @@
   text-wrap: balance;
   backdrop-filter: blur(18px);
   pointer-events: auto;
+}
+
+#disccord-overlay .disccord-speaker {
+  color: #aeb7ff;
+  font-size: 0.48em;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  line-height: 1.2;
+}
+
+#disccord-overlay .disccord-caption-text {
+  display: block;
 }
 
 #disccord-overlay .disccord-caption[data-final="true"] {

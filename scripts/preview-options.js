@@ -17,13 +17,16 @@ const contentTypes = {
 const chromeMock = `
 <script>
   (() => {
+    const now = Date.now();
     const makeStorage = (initial = {}) => {
       const data = { ...initial };
       return {
         async setAccessLevel() {},
         async get(keys) {
           if (Array.isArray(keys)) {
-            return Object.fromEntries(keys.filter((key) => key in data).map((key) => [key, data[key]]));
+            return Object.fromEntries(
+              keys.filter((key) => key in data).map((key) => [key, data[key]]),
+            );
           }
           if (typeof keys === "string") {
             return keys in data ? { [keys]: data[keys] } : {};
@@ -36,9 +39,75 @@ const chromeMock = `
         },
       };
     };
+    const local = makeStorage({
+      discordClosedCaptionsDeviceApiKey: "preview-only-not-a-real-api-key-1234567890",
+      discordClosedCaptionsKeyMode: "device",
+      languages: ["en"],
+      keywords: ["Discord"],
+      prompt: "A casual Discord call between friends.",
+      saveTranscripts: true,
+      speakerAttribution: true,
+      transcribeSelf: false,
+      disccordLatestTranscript: {
+        version: 1,
+        sessionId: "preview-session",
+        startedAt: now - 180000,
+        endedAt: now,
+        entries: [
+          {
+            itemId: "one",
+            speaker: "Alex",
+            speakerCandidates: ["Alex"],
+            text: "The speaker labels should update without delaying the captions.",
+            createdAt: now - 120000,
+            updatedAt: now - 120000,
+          },
+          {
+            itemId: "two",
+            speaker: "Sam or Jordan",
+            speakerCandidates: ["Sam", "Jordan"],
+            text: "If two people overlap, the transcript can preserve that ambiguity.",
+            createdAt: now - 60000,
+            updatedAt: now - 60000,
+          },
+        ],
+      },
+    });
+    const session = makeStorage();
     window.chrome = {
-      runtime: { id: "options-preview" },
-      storage: { local: makeStorage(), session: makeStorage() },
+      runtime: {
+        id: "extension-preview",
+        async sendMessage(message) {
+          if (message.type === "disccord:get-state") return { ok: true, activeTabId: null };
+          if (message.type === "disccord:update-settings") {
+            await local.set(message.settings);
+            return {
+              ok: true,
+              settings: {
+                saveTranscripts: true,
+                speakerAttribution: true,
+                transcribeSelf: false,
+                ...message.settings,
+              },
+            };
+          }
+          if (message.type === "disccord:clear-transcript") {
+            await local.remove("disccordLatestTranscript");
+            return { ok: true };
+          }
+          return { ok: true };
+        },
+        async openOptionsPage() {},
+      },
+      storage: {
+        local,
+        session,
+        onChanged: { addListener() {} },
+      },
+      tabs: {
+        async query() { return [{ id: 1, url: "https://discord.com/channels/preview" }]; },
+        async get(id) { return { id, url: "https://discord.com/channels/preview" }; },
+      },
     };
   })();
 </script>`;
@@ -77,6 +146,7 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, host, () => {
   console.log(`Options preview: http://${host}:${port}/options.html`);
+  console.log(`Popup preview: http://${host}:${port}/popup.html`);
 });
 
 function respond(response, status, message) {

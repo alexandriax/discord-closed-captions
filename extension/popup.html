@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Discord Closed Captions</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand">
+          <img src="icons/icon-32.png" alt="" width="32" height="32" />
+          <div>
+            <p class="eyebrow">DISCCORD</p>
+            <h1>Closed captions</h1>
+          </div>
+        </div>
+        <span id="key-state" class="pill" data-state="missing">No key</span>
+      </header>
+
+      <section class="capture-panel" aria-labelledby="capture-heading">
+        <div>
+          <h2 id="capture-heading">Live captions</h2>
+          <p id="capture-summary">Open a Discord call to start.</p>
+        </div>
+        <button id="capture-button" type="button">Start</button>
+      </section>
+
+      <form id="unlock-form" class="unlock-panel" hidden>
+        <label for="unlock-passphrase">Unlock your saved API key</label>
+        <div class="inline-control">
+          <input
+            id="unlock-passphrase"
+            name="unlockPassphrase"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Vault passphrase"
+            required
+          />
+          <button type="submit" class="secondary">Unlock</button>
+        </div>
+      </form>
+
+      <section class="quick-settings" aria-labelledby="quick-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">QUICK SETTINGS</p>
+            <h2 id="quick-heading">For this browser</h2>
+          </div>
+          <button id="open-settings" type="button" class="link-button">
+            All settings
+          </button>
+        </div>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Save session transcript</strong>
+            <small>Keep the latest transcript on this device.</small>
+          </span>
+          <input id="saveTranscripts" type="checkbox" role="switch" />
+        </label>
+        <label class="toggle-row">
+          <span>
+            <strong>Show Discord speaker names</strong>
+            <small>Uses Discord’s live speaking indicators.</small>
+          </span>
+          <input id="speakerAttribution" type="checkbox" role="switch" />
+        </label>
+        <label class="toggle-row">
+          <span>
+            <strong>Transcribe my microphone</strong>
+            <small>Off by default. Applies when the next session starts.</small>
+          </span>
+          <input id="transcribeSelf" type="checkbox" role="switch" />
+        </label>
+      </section>
+
+      <section class="transcript-panel" aria-labelledby="transcript-heading">
+        <div class="section-heading transcript-heading-row">
+          <div>
+            <p class="eyebrow">LATEST SESSION</p>
+            <h2 id="transcript-heading">Transcript</h2>
+          </div>
+          <button id="clear-transcript" type="button" class="link-button" hidden>
+            Clear
+          </button>
+        </div>
+        <p id="transcript-meta" class="transcript-meta"></p>
+        <div id="transcript" class="transcript" aria-live="polite">
+          <p class="empty-state">Final captions will appear here.</p>
+        </div>
+      </section>
+
+      <output id="status" aria-live="polite"></output>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

@@ -3,11 +3,12 @@ import {
   configureStorageAccess,
   getApiKeyState,
   lockApiKey,
+  storeDeviceApiKey,
   storeEncryptedApiKey,
   storeSessionApiKey,
   unlockApiKey,
 } from "./key-vault.js";
-import { loadSettings, parseList, saveSettings } from "./settings.js";
+import { loadSettings, parseList } from "./settings.js";
 
 const keyForm = document.querySelector("#key-form");
 const settingsForm = document.querySelector("#settings-form");
@@ -20,6 +21,7 @@ const lockButton = document.querySelector("#lock-key");
 const clearButton = document.querySelector("#clear-key");
 const keyStatus = document.querySelector("#key-status");
 const settingsStatus = document.querySelector("#settings-status");
+let transcribeSelfEnabled = false;
 
 initialize().catch((error) => showStatus(keyStatus, error.message, true));
 
@@ -44,6 +46,8 @@ keyForm.addEventListener("submit", async (event) => {
         throw new Error("The vault passphrases do not match.");
       }
       await storeEncryptedApiKey(apiKey, passphrase);
+    } else if (mode === "device") {
+      await storeDeviceApiKey(apiKey);
     } else {
       await storeSessionApiKey(apiKey);
     }
@@ -92,11 +96,19 @@ settingsForm.addEventListener("submit", async (event) => {
 
   try {
     const formData = new FormData(settingsForm);
-    await saveSettings({
+    const transcribeSelf = formData.get("transcribeSelf") === "on";
+    if (transcribeSelf && !transcribeSelfEnabled) {
+      await requestMicrophoneAccess();
+    }
+    await updateSettings({
       languages: parseList(formData.get("languages")),
       keywords: parseList(formData.get("keywords")),
       prompt: formData.get("prompt"),
+      saveTranscripts: formData.get("saveTranscripts") === "on",
+      speakerAttribution: formData.get("speakerAttribution") === "on",
+      transcribeSelf,
     });
+    transcribeSelfEnabled = transcribeSelf;
     showStatus(settingsStatus, "Caption settings saved");
   } catch (error) {
     showStatus(settingsStatus, error.message, true);
@@ -109,6 +121,11 @@ async function initialize() {
   settingsForm.elements.languages.value = settings.languages.join(", ");
   settingsForm.elements.keywords.value = settings.keywords.join(", ");
   settingsForm.elements.prompt.value = settings.prompt;
+  settingsForm.elements.saveTranscripts.checked = settings.saveTranscripts;
+  settingsForm.elements.speakerAttribution.checked =
+    settings.speakerAttribution;
+  settingsForm.elements.transcribeSelf.checked = settings.transcribeSelf;
+  transcribeSelfEnabled = settings.transcribeSelf;
   await refreshKeyState();
 }
 
@@ -138,7 +155,9 @@ async function refreshKeyState() {
     keySummary.textContent =
       state.mode === "vault"
         ? "The encrypted vault is unlocked for this Chrome session."
-        : "The API key is available until Chrome closes or the extension reloads.";
+        : state.mode === "device"
+          ? "The API key is saved on this device and will still be available after Chrome restarts."
+          : "The API key is available until Chrome closes or the extension reloads.";
     return;
   }
 
@@ -164,4 +183,29 @@ function clearSecretFields(form) {
 function showStatus(output, message, isError = false) {
   output.textContent = message;
   output.dataset.error = String(isError);
+}
+
+async function requestMicrophoneAccess() {
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    throw new Error("Allow microphone access to transcribe your voice.");
+  } finally {
+    for (const track of stream?.getTracks() || []) {
+      track.stop();
+    }
+  }
+}
+
+async function updateSettings(settings) {
+  const response = await chrome.runtime.sendMessage({
+    target: "service-worker",
+    type: "disccord:update-settings",
+    settings,
+  });
+  if (!response?.ok) {
+    throw new Error(response?.error || "Caption settings could not be saved.");
+  }
+  return response.settings;
 }
