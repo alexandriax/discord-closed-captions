@@ -49,6 +49,10 @@ captureButton.addEventListener("click", async () => {
       if (!currentTab?.id || !DISCORD_URL.test(currentTab.url || "")) {
         throw new Error("Open Discord Web in this tab before starting captions.");
       }
+      const settings = await loadSettings();
+      if (settings.transcribeSelf) {
+        await requestMicrophoneAccess();
+      }
       await sendToWorker({
         type: "disccord:start-request",
         tabId: currentTab.id,

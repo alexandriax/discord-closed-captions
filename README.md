@@ -24,7 +24,7 @@ Discord bot, or Discord account token.
 - Speaker detection from Discord's current call-tile speaking rings and accessible participant labels
 - Explicit overlap ambiguity across calls with dozens of participants
 - Graceful cleanup of stale monitoring when an unpacked extension is reloaded
-- Optional local-microphone transcription, off by default
+- Optional local-microphone transcription, on by default
 - Continued Discord audio playback while tab capture is active
 - Direct Realtime API connection using `gpt-live-transcribe`
 - No stored audio, Discord credentials, private gateway access, or hosted call history
@@ -53,10 +53,11 @@ Realtime client-secret endpoint. The resulting short-lived credential
 authenticates the browser WebSocket. The standard key is never sent to Discord,
 the Discord content script, a project server, or a URL.
 
-Only the tab's rendered output is captured by default. In a typical call, that
-includes remote participants and Discord notification sounds. If **Transcribe
-my microphone** is enabled, the extension mixes the local microphone into the
-transcription stream without playing it back through the speakers.
+The tab's rendered output is always captured during a caption session. In a
+typical call, that includes remote participants and Discord notification sounds.
+**Transcribe my microphone** is on by default and mixes the local microphone
+into the transcription stream without playing it back through the speakers. It
+can be turned off before starting a session.
 
 Speaker attribution runs alongside transcription and never blocks caption
 delivery. The content script samples Discord's visible call-tile speaking rings,
@@ -139,9 +140,11 @@ rotate the key if anything looks unexpected.
 2. Confirm everyone has consented to live transcription.
 3. Click the extension's toolbar icon in the active Discord tab.
 4. Choose **Start** in the popup.
-5. Watch the status indicator turn green when live captions are ready.
-6. Open the popup at any time to review the transcript or quick settings.
-7. Choose **Stop**—or the close button above the captions—to stop.
+5. Allow microphone access when prompted, or turn off **Transcribe my
+   microphone** before starting if only the Discord tab should be transcribed.
+6. Watch the status indicator turn green when live captions are ready.
+7. Open the popup at any time to review the transcript or quick settings.
+8. Choose **Stop**—or the close button above the captions—to stop.
 
 Chrome displays its normal capture indicator while the extension is listening
 to the selected tab. Audio is never retained. When transcript saving is on,
@@ -159,7 +162,7 @@ The extension options include:
 | Call context | Short, non-sensitive context that can improve transcription |
 | Save latest transcript | Stores finalized captions locally; on by default |
 | Show Discord speaker names | Attributes recent speaking indicators; on by default |
-| Transcribe my microphone | Includes and labels local speech; off by default |
+| Transcribe my microphone | Includes and labels local speech; on by default |
 
 The three session-feature switches are also available directly in the toolbar
 popup. Microphone changes apply when the next caption session starts.
@@ -211,9 +214,9 @@ previously saved `Unknown speaker` entries are not renamed retroactively.
 
 ### My voice is not transcribed
 
-Enable **Transcribe my microphone**, allow microphone access, then start a new
-caption session. The setting is off by default and does not alter a session that
-is already running.
+Confirm **Transcribe my microphone** is enabled, allow microphone access, then
+start a new caption session. The setting is on by default for new installs and
+does not alter a session that is already running.
 
 ### OpenAI rejects the session
 

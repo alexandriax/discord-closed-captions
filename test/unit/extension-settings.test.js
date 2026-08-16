@@ -23,7 +23,7 @@ test("normalizeSettings trims, deduplicates, and bounds caption preferences", ()
       prompt: "context ".repeat(100).trim().slice(0, 500),
       saveTranscripts: true,
       speakerAttribution: true,
-      transcribeSelf: false,
+      transcribeSelf: true,
     },
   );
 });
@@ -32,10 +32,10 @@ test("normalizeSettings preserves explicit session feature choices", () => {
   const settings = normalizeSettings({
     saveTranscripts: false,
     speakerAttribution: false,
-    transcribeSelf: true,
+    transcribeSelf: false,
   });
 
   assert.equal(settings.saveTranscripts, false);
   assert.equal(settings.speakerAttribution, false);
-  assert.equal(settings.transcribeSelf, true);
+  assert.equal(settings.transcribeSelf, false);
 });
