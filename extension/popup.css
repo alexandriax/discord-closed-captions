@@ -242,6 +242,11 @@ input[role="switch"] {
   margin-bottom: 8px;
 }
 
+.transcript-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .transcript-meta {
   margin-bottom: 8px;
 }

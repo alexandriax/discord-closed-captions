@@ -20,11 +20,12 @@ Discord bot, or Discord account token.
 - Live partial captions and finalized caption segments
 - A readable caption overlay inside Discord, including fullscreen calls
 - A locally saved latest-session transcript, on by default and viewable in the popup
+- One-click copying of the saved transcript from the popup
 - Best-effort Discord speaker names in both overlay captions and saved transcripts
 - Speaker detection from Discord's current call-tile speaking rings and accessible participant labels
 - Explicit overlap ambiguity across calls with dozens of participants
 - Graceful cleanup of stale monitoring when an unpacked extension is reloaded
-- Optional local-microphone transcription, on by default
+- Optional local-microphone transcription, off by default
 - Continued Discord audio playback while tab capture is active
 - Direct Realtime API connection using `gpt-live-transcribe`
 - No stored audio, Discord credentials, private gateway access, or hosted call history
@@ -55,9 +56,9 @@ the Discord content script, a project server, or a URL.
 
 The tab's rendered output is always captured during a caption session. In a
 typical call, that includes remote participants and Discord notification sounds.
-**Transcribe my microphone** is on by default and mixes the local microphone
-into the transcription stream without playing it back through the speakers. It
-can be turned off before starting a session.
+**Transcribe my microphone** is off by default. When enabled, it mixes the local
+microphone into the transcription stream without playing it back through the
+speakers.
 
 Speaker attribution runs alongside transcription and never blocks caption
 delivery. The content script samples Discord's visible call-tile speaking rings,
@@ -162,7 +163,7 @@ The extension options include:
 | Call context | Short, non-sensitive context that can improve transcription |
 | Save latest transcript | Stores finalized captions locally; on by default |
 | Show Discord speaker names | Attributes recent speaking indicators; on by default |
-| Transcribe my microphone | Includes and labels local speech; on by default |
+| Transcribe my microphone | Includes and labels local speech; off by default |
 
 The three session-feature switches are also available directly in the toolbar
 popup. Microphone changes apply when the next caption session starts.
@@ -172,6 +173,7 @@ popup. Microphone changes apply when the next caption session starts.
 | Permission | Why it is needed |
 | --- | --- |
 | `activeTab` | Limits toolbar actions to the user-selected active tab |
+| `clipboardWrite` | Copies the saved transcript after the user chooses **Copy** |
 | `tabCapture` | Captures audio from the active Discord Web tab after a toolbar click |
 | `offscreen` | Keeps audio processing active outside the Discord page |
 | `storage` | Stores preferences, key state, optional encrypted vault data, and the optional latest transcript |
@@ -215,7 +217,7 @@ previously saved `Unknown speaker` entries are not renamed retroactively.
 ### My voice is not transcribed
 
 Confirm **Transcribe my microphone** is enabled, allow microphone access, then
-start a new caption session. The setting is on by default for new installs and
+start a new caption session. The setting is off by default for new installs and
 does not alter a session that is already running.
 
 ### OpenAI rejects the session

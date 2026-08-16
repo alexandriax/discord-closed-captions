@@ -23,7 +23,7 @@ test("normalizeSettings trims, deduplicates, and bounds caption preferences", ()
       prompt: "context ".repeat(100).trim().slice(0, 500),
       saveTranscripts: true,
       speakerAttribution: true,
-      transcribeSelf: true,
+      transcribeSelf: false,
     },
   );
 });
