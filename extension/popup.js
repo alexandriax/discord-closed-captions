@@ -4,12 +4,16 @@ import {
   unlockApiKey,
 } from "./key-vault.js";
 import { loadSettings } from "./settings.js";
-import { loadTranscript } from "./transcript-store.js";
+import {
+  formatTranscriptText,
+  loadTranscript,
+} from "./transcript-store.js";
 
 const DISCORD_URL = /^https:\/\/discord\.com\//;
 const captureButton = document.querySelector("#capture-button");
 const captureSummary = document.querySelector("#capture-summary");
 const clearTranscriptButton = document.querySelector("#clear-transcript");
+const copyTranscriptButton = document.querySelector("#copy-transcript");
 const keyStateElement = document.querySelector("#key-state");
 const openSettingsButton = document.querySelector("#open-settings");
 const statusOutput = document.querySelector("#status");
@@ -115,6 +119,22 @@ clearTranscriptButton.addEventListener("click", async () => {
   showStatus("Transcript cleared");
 });
 
+copyTranscriptButton.addEventListener("click", async () => {
+  copyTranscriptButton.disabled = true;
+  try {
+    const text = formatTranscriptText(await loadTranscript());
+    if (!text) {
+      throw new Error("There is no transcript to copy.");
+    }
+    await navigator.clipboard.writeText(text);
+    showStatus("Transcript copied");
+  } catch (error) {
+    showStatus(error.message || "The transcript could not be copied.", true);
+  } finally {
+    copyTranscriptButton.disabled = false;
+  }
+});
+
 openSettingsButton.addEventListener("click", async () => {
   await chrome.runtime.openOptionsPage();
   window.close();
@@ -186,6 +206,7 @@ async function refreshTranscript() {
   const transcript = await loadTranscript();
   transcriptElement.replaceChildren();
   clearTranscriptButton.hidden = !transcript;
+  copyTranscriptButton.hidden = !transcript?.entries.length;
   transcriptMeta.textContent = transcript ? formatTranscriptMeta(transcript) : "";
 
   if (!transcript?.entries.length) {

@@ -70,7 +70,7 @@
         <label class="toggle-row">
           <span>
             <strong>Transcribe my microphone</strong>
-            <small>On by default. Applies when the next session starts.</small>
+            <small>Off by default. Applies when the next session starts.</small>
           </span>
           <input id="transcribeSelf" type="checkbox" role="switch" />
         </label>
@@ -82,9 +82,14 @@
             <p class="eyebrow">LATEST SESSION</p>
             <h2 id="transcript-heading">Transcript</h2>
           </div>
-          <button id="clear-transcript" type="button" class="link-button" hidden>
-            Clear
-          </button>
+          <div class="transcript-actions">
+            <button id="copy-transcript" type="button" class="link-button" hidden>
+              Copy
+            </button>
+            <button id="clear-transcript" type="button" class="link-button" hidden>
+              Clear
+            </button>
+          </div>
         </div>
         <p id="transcript-meta" class="transcript-meta"></p>
         <div id="transcript" class="transcript" aria-live="polite">

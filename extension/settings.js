@@ -5,7 +5,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     "A casual Discord call between friends. Transcribe only speech, not background sounds.",
   saveTranscripts: true,
   speakerAttribution: true,
-  transcribeSelf: true,
+  transcribeSelf: false,
 });
 
 export async function loadSettings() {

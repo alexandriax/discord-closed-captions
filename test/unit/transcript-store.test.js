@@ -45,3 +45,7 @@ test("transcript entries update by OpenAI item id without duplication", () => {
   assert.equal(finished.entries[0].text, "Hello there");
   assert.equal(finished.endedAt, 2_000);
 });
+
+test("empty transcript state formats as empty text", () => {
+  assert.equal(formatTranscriptText(null), "");
+});

@@ -67,6 +67,9 @@ export function finishTranscript(transcript, endedAt = Date.now()) {
 
 export function formatTranscriptText(transcript) {
   const normalized = normalizeTranscript(transcript);
+  if (!normalized) {
+    return "";
+  }
   return normalized.entries
     .map((entry) => `${entry.speaker || "Unknown speaker"}: ${entry.text}`)
     .join("\n\n");
